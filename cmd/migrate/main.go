@@ -10,7 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
-	"github.com/Strangebrewer/go-service-template/config"
+	"github.com/Strangebrewer/go-budget/config"
 )
 
 func main() {

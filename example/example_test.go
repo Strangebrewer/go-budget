@@ -13,7 +13,7 @@ import (
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/Strangebrewer/go-service-template/example"
+	"github.com/Strangebrewer/go-budget/example"
 )
 
 var testStore *example.Store

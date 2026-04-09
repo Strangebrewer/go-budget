@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/Strangebrewer/go-service-template/middleware"
+	"github.com/Strangebrewer/go-budget/middleware"
 	"github.com/go-chi/chi/v5"
 )
 

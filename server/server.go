@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/Strangebrewer/go-service-template/app"
-	"github.com/Strangebrewer/go-service-template/middleware"
+	"github.com/Strangebrewer/go-budget/app"
+	"github.com/Strangebrewer/go-budget/middleware"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
