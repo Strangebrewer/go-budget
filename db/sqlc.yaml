@@ -7,3 +7,12 @@ sql:
       go:
         package: "db"
         out: "./generated"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              package: "uuid"
+              type: "UUID"
+          - db_type: "timestamptz"
+            go_type: "time.Time"

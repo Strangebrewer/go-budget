@@ -10,12 +10,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Strangebrewer/go-budget/account"
 	"github.com/Strangebrewer/go-budget/app"
+	"github.com/Strangebrewer/go-budget/bill"
+	"github.com/Strangebrewer/go-budget/category"
 	"github.com/Strangebrewer/go-budget/config"
 	"github.com/Strangebrewer/go-budget/db_connection"
-	"github.com/Strangebrewer/go-budget/example"
 	"github.com/Strangebrewer/go-budget/middleware"
 	"github.com/Strangebrewer/go-budget/server"
+	"github.com/Strangebrewer/go-budget/transaction"
 )
 
 func main() {
@@ -38,7 +41,10 @@ func main() {
 	}
 
 	application := &app.Application{
-		ExampleStore: example.NewStore(pool),
+		AccountStore:     account.NewStore(pool),
+		BillStore:        bill.NewStore(pool),
+		CategoryStore:    category.NewStore(pool),
+		TransactionStore: transaction.NewStore(pool),
 	}
 
 	port := cfg.Port
