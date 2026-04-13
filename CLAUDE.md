@@ -117,10 +117,10 @@ Copy `.env.example` to `.env.local` for local dev. Never commit `.env.local`.
 
 ## Current State
 
-- Module renamed to `github.com/Strangebrewer/go-budget`, all import paths updated
-- `.env.example` updated with `budget` schema name
-- Ground zero committed to `main` — template boilerplate intact, no domain code written yet
-- **Next**: write `db/schema.sql` and migrations, then `account/`, `bill/`, `transaction/` domains
+- `account/`, `bill/`, `transaction/`, `category/` domains complete
+- Deployed to dev and verified working
+- Cloud Run dev URL: `https://go-budget-dev-iwpkmztv2a-uc.a.run.app`
+- `example/` domain still present — remove before next meaningful work on this service
 
 ---
 

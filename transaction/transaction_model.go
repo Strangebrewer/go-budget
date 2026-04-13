@@ -57,6 +57,7 @@ type UpdateTransactionRequest struct {
 	Type          string `json:"type"`
 }
 
+
 func ToTransaction(t db.Transaction) Transaction {
 	return Transaction{
 		ID:            t.ID.String(),
