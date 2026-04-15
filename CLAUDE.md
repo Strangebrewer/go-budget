@@ -55,7 +55,6 @@ category/
   category_store.go
   category_handler.go
   category_routes.go
-example/             ← template reference domain, leave until real domains are built
 ```
 
 ---
@@ -120,7 +119,6 @@ Copy `.env.example` to `.env.local` for local dev. Never commit `.env.local`.
 - `account/`, `bill/`, `transaction/`, `category/` domains complete
 - Deployed to dev and verified working
 - Cloud Run dev URL: `https://go-budget-dev-iwpkmztv2a-uc.a.run.app`
-- `example/` domain still present — remove before next meaningful work on this service
 
 ---
 
