@@ -20,18 +20,18 @@ RETURNING id, user_id, source_id, category_id, name, description, due_day, owner
 `
 
 type CreateBillParams struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	SourceID    uuid.UUID
-	CategoryID  pgtype.UUID
-	Name        string
-	Description string
-	DueDay      int32
-	Owner       string
-	Shared      bool
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID   `json:"id"`
+	UserID      uuid.UUID   `json:"userId"`
+	SourceID    uuid.UUID   `json:"sourceId"`
+	CategoryID  pgtype.UUID `json:"categoryId"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	DueDay      int32       `json:"dueDay"`
+	Owner       string      `json:"owner"`
+	Shared      bool        `json:"shared"`
+	Status      string      `json:"status"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
 }
 
 func (q *Queries) CreateBill(ctx context.Context, arg CreateBillParams) (Bill, error) {
@@ -155,16 +155,16 @@ RETURNING id, user_id, source_id, category_id, name, description, due_day, owner
 `
 
 type UpdateBillParams struct {
-	ID          uuid.UUID
-	SourceID    uuid.UUID
-	CategoryID  pgtype.UUID
-	Name        string
-	Description string
-	DueDay      int32
-	Owner       string
-	Shared      bool
-	Status      string
-	UpdatedAt   time.Time
+	ID          uuid.UUID   `json:"id"`
+	SourceID    uuid.UUID   `json:"sourceId"`
+	CategoryID  pgtype.UUID `json:"categoryId"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	DueDay      int32       `json:"dueDay"`
+	Owner       string      `json:"owner"`
+	Shared      bool        `json:"shared"`
+	Status      string      `json:"status"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
 }
 
 func (q *Queries) UpdateBill(ctx context.Context, arg UpdateBillParams) (Bill, error) {

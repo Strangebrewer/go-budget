@@ -12,57 +12,57 @@ import (
 )
 
 type Account struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Name        string
-	Description string
-	Balance     int32
-	Owner       string
-	Status      string
-	Type        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"userId"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Balance     int32     `json:"balance"`
+	Owner       string    `json:"owner"`
+	Status      string    `json:"status"`
+	Type        string    `json:"type"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Bill struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	SourceID    uuid.UUID
-	CategoryID  pgtype.UUID
-	Name        string
-	Description string
-	DueDay      int32
-	Owner       string
-	Shared      bool
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID   `json:"id"`
+	UserID      uuid.UUID   `json:"userId"`
+	SourceID    uuid.UUID   `json:"sourceId"`
+	CategoryID  pgtype.UUID `json:"categoryId"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	DueDay      int32       `json:"dueDay"`
+	Owner       string      `json:"owner"`
+	Shared      bool        `json:"shared"`
+	Status      string      `json:"status"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	UpdatedAt   time.Time   `json:"updatedAt"`
 }
 
 type Category struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Name        string
-	Description string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"userId"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type Transaction struct {
-	ID            uuid.UUID
-	UserID        uuid.UUID
-	SourceID      pgtype.UUID
-	DestinationID pgtype.UUID
-	BillID        pgtype.UUID
-	CategoryID    pgtype.UUID
-	Amount        int32
-	BillMonth     pgtype.Text
-	Date          pgtype.Date
-	Description   string
-	Income        bool
-	Owner         string
-	Shared        bool
-	Type          string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID   `json:"id"`
+	UserID        uuid.UUID   `json:"userId"`
+	SourceID      pgtype.UUID `json:"sourceId"`
+	DestinationID pgtype.UUID `json:"destinationId"`
+	BillID        pgtype.UUID `json:"billId"`
+	CategoryID    pgtype.UUID `json:"categoryId"`
+	Amount        int32       `json:"amount"`
+	BillMonth     pgtype.Text `json:"billMonth"`
+	Date          pgtype.Date `json:"date"`
+	Description   string      `json:"description"`
+	Income        bool        `json:"income"`
+	Owner         string      `json:"owner"`
+	Shared        bool        `json:"shared"`
+	Type          string      `json:"type"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
 }

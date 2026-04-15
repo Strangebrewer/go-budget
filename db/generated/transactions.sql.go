@@ -20,22 +20,22 @@ RETURNING id, user_id, source_id, destination_id, bill_id, category_id, amount, 
 `
 
 type CreateTransactionParams struct {
-	ID            uuid.UUID
-	UserID        uuid.UUID
-	SourceID      pgtype.UUID
-	DestinationID pgtype.UUID
-	BillID        pgtype.UUID
-	CategoryID    pgtype.UUID
-	Amount        int32
-	BillMonth     pgtype.Text
-	Date          pgtype.Date
-	Description   string
-	Income        bool
-	Owner         string
-	Shared        bool
-	Type          string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID   `json:"id"`
+	UserID        uuid.UUID   `json:"userId"`
+	SourceID      pgtype.UUID `json:"sourceId"`
+	DestinationID pgtype.UUID `json:"destinationId"`
+	BillID        pgtype.UUID `json:"billId"`
+	CategoryID    pgtype.UUID `json:"categoryId"`
+	Amount        int32       `json:"amount"`
+	BillMonth     pgtype.Text `json:"billMonth"`
+	Date          pgtype.Date `json:"date"`
+	Description   string      `json:"description"`
+	Income        bool        `json:"income"`
+	Owner         string      `json:"owner"`
+	Shared        bool        `json:"shared"`
+	Type          string      `json:"type"`
+	CreatedAt     time.Time   `json:"createdAt"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
 }
 
 func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error) {
@@ -167,8 +167,8 @@ ORDER BY bill_month, date
 `
 
 type GetTransactionsByBillMonthsParams struct {
-	UserID  uuid.UUID
-	Column2 []string
+	UserID  uuid.UUID `json:"userId"`
+	Column2 []string  `json:"column2"`
 }
 
 func (q *Queries) GetTransactionsByBillMonths(ctx context.Context, arg GetTransactionsByBillMonthsParams) ([]Transaction, error) {
@@ -228,20 +228,20 @@ RETURNING id, user_id, source_id, destination_id, bill_id, category_id, amount, 
 `
 
 type UpdateTransactionParams struct {
-	ID            uuid.UUID
-	SourceID      pgtype.UUID
-	DestinationID pgtype.UUID
-	BillID        pgtype.UUID
-	CategoryID    pgtype.UUID
-	Amount        int32
-	BillMonth     pgtype.Text
-	Date          pgtype.Date
-	Description   string
-	Income        bool
-	Owner         string
-	Shared        bool
-	Type          string
-	UpdatedAt     time.Time
+	ID            uuid.UUID   `json:"id"`
+	SourceID      pgtype.UUID `json:"sourceId"`
+	DestinationID pgtype.UUID `json:"destinationId"`
+	BillID        pgtype.UUID `json:"billId"`
+	CategoryID    pgtype.UUID `json:"categoryId"`
+	Amount        int32       `json:"amount"`
+	BillMonth     pgtype.Text `json:"billMonth"`
+	Date          pgtype.Date `json:"date"`
+	Description   string      `json:"description"`
+	Income        bool        `json:"income"`
+	Owner         string      `json:"owner"`
+	Shared        bool        `json:"shared"`
+	Type          string      `json:"type"`
+	UpdatedAt     time.Time   `json:"updatedAt"`
 }
 
 func (q *Queries) UpdateTransaction(ctx context.Context, arg UpdateTransactionParams) (Transaction, error) {

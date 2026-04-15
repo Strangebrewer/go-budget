@@ -19,16 +19,16 @@ RETURNING id, user_id, name, description, balance, owner, status, type, created_
 `
 
 type CreateAccountParams struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Name        string
-	Description string
-	Balance     int32
-	Owner       string
-	Status      string
-	Type        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"userId"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Balance     int32     `json:"balance"`
+	Owner       string    `json:"owner"`
+	Status      string    `json:"status"`
+	Type        string    `json:"type"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
@@ -142,14 +142,14 @@ RETURNING id, user_id, name, description, balance, owner, status, type, created_
 `
 
 type UpdateAccountParams struct {
-	ID          uuid.UUID
-	Name        string
-	Description string
-	Balance     int32
-	Owner       string
-	Status      string
-	Type        string
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Balance     int32     `json:"balance"`
+	Owner       string    `json:"owner"`
+	Status      string    `json:"status"`
+	Type        string    `json:"type"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error) {

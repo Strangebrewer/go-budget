@@ -19,12 +19,12 @@ RETURNING id, user_id, name, description, created_at, updated_at
 `
 
 type CreateCategoryParams struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Name        string
-	Description string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"userId"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
@@ -118,10 +118,10 @@ RETURNING id, user_id, name, description, created_at, updated_at
 `
 
 type UpdateCategoryParams struct {
-	ID          uuid.UUID
-	Name        string
-	Description string
-	UpdatedAt   time.Time
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
