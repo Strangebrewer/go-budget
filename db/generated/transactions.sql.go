@@ -131,6 +131,102 @@ func (q *Queries) GetAllTransactions(ctx context.Context, userID uuid.UUID) ([]T
 	return items, nil
 }
 
+const getIncomeTransactions = `-- name: GetIncomeTransactions :many
+SELECT id, user_id, source_id, destination_id, bill_id, category_id, amount, bill_month, date, description, income, owner, shared, type, created_at, updated_at FROM transactions
+WHERE user_id = $1
+  AND income = true
+ORDER BY date DESC, created_at DESC
+`
+
+func (q *Queries) GetIncomeTransactions(ctx context.Context, userID uuid.UUID) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getIncomeTransactions, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SourceID,
+			&i.DestinationID,
+			&i.BillID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.BillMonth,
+			&i.Date,
+			&i.Description,
+			&i.Income,
+			&i.Owner,
+			&i.Shared,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getIncomeTransactionsByMonth = `-- name: GetIncomeTransactionsByMonth :many
+SELECT id, user_id, source_id, destination_id, bill_id, category_id, amount, bill_month, date, description, income, owner, shared, type, created_at, updated_at FROM transactions
+WHERE user_id = $1
+  AND income = true
+  AND date >= $2
+  AND date < $3
+ORDER BY date DESC, created_at DESC
+`
+
+type GetIncomeTransactionsByMonthParams struct {
+	UserID uuid.UUID   `json:"userId"`
+	Date   pgtype.Date `json:"date"`
+	Date_2 pgtype.Date `json:"date2"`
+}
+
+func (q *Queries) GetIncomeTransactionsByMonth(ctx context.Context, arg GetIncomeTransactionsByMonthParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getIncomeTransactionsByMonth, arg.UserID, arg.Date, arg.Date_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SourceID,
+			&i.DestinationID,
+			&i.BillID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.BillMonth,
+			&i.Date,
+			&i.Description,
+			&i.Income,
+			&i.Owner,
+			&i.Shared,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTransactionByID = `-- name: GetTransactionByID :one
 SELECT id, user_id, source_id, destination_id, bill_id, category_id, amount, bill_month, date, description, income, owner, shared, type, created_at, updated_at FROM transactions WHERE id = $1
 `
@@ -173,6 +269,113 @@ type GetTransactionsByBillMonthsParams struct {
 
 func (q *Queries) GetTransactionsByBillMonths(ctx context.Context, arg GetTransactionsByBillMonthsParams) ([]Transaction, error) {
 	rows, err := q.db.Query(ctx, getTransactionsByBillMonths, arg.UserID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SourceID,
+			&i.DestinationID,
+			&i.BillID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.BillMonth,
+			&i.Date,
+			&i.Description,
+			&i.Income,
+			&i.Owner,
+			&i.Shared,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransactionsByCategories = `-- name: GetTransactionsByCategories :many
+SELECT id, user_id, source_id, destination_id, bill_id, category_id, amount, bill_month, date, description, income, owner, shared, type, created_at, updated_at FROM transactions
+WHERE user_id = $1
+  AND category_id = ANY($2::uuid[])
+ORDER BY date DESC, created_at DESC
+`
+
+type GetTransactionsByCategoriesParams struct {
+	UserID  uuid.UUID   `json:"userId"`
+	Column2 []uuid.UUID `json:"column2"`
+}
+
+func (q *Queries) GetTransactionsByCategories(ctx context.Context, arg GetTransactionsByCategoriesParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransactionsByCategories, arg.UserID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SourceID,
+			&i.DestinationID,
+			&i.BillID,
+			&i.CategoryID,
+			&i.Amount,
+			&i.BillMonth,
+			&i.Date,
+			&i.Description,
+			&i.Income,
+			&i.Owner,
+			&i.Shared,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransactionsByMonthAndCategories = `-- name: GetTransactionsByMonthAndCategories :many
+SELECT id, user_id, source_id, destination_id, bill_id, category_id, amount, bill_month, date, description, income, owner, shared, type, created_at, updated_at FROM transactions
+WHERE user_id = $1
+  AND date >= $2
+  AND date < $3
+  AND category_id = ANY($4::uuid[])
+ORDER BY date DESC, created_at DESC
+`
+
+type GetTransactionsByMonthAndCategoriesParams struct {
+	UserID  uuid.UUID   `json:"userId"`
+	Date    pgtype.Date `json:"date"`
+	Date_2  pgtype.Date `json:"date2"`
+	Column4 []uuid.UUID `json:"column4"`
+}
+
+func (q *Queries) GetTransactionsByMonthAndCategories(ctx context.Context, arg GetTransactionsByMonthAndCategoriesParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransactionsByMonthAndCategories,
+		arg.UserID,
+		arg.Date,
+		arg.Date_2,
+		arg.Column4,
+	)
 	if err != nil {
 		return nil, err
 	}

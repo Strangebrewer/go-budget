@@ -9,6 +9,34 @@ WHERE user_id = $1
   AND bill_month = ANY($2::text[])
 ORDER BY bill_month, date;
 
+-- name: GetTransactionsByCategories :many
+SELECT * FROM transactions
+WHERE user_id = $1
+  AND category_id = ANY($2::uuid[])
+ORDER BY date DESC, created_at DESC;
+
+-- name: GetTransactionsByMonthAndCategories :many
+SELECT * FROM transactions
+WHERE user_id = $1
+  AND date >= $2
+  AND date < $3
+  AND category_id = ANY($4::uuid[])
+ORDER BY date DESC, created_at DESC;
+
+-- name: GetIncomeTransactions :many
+SELECT * FROM transactions
+WHERE user_id = $1
+  AND income = true
+ORDER BY date DESC, created_at DESC;
+
+-- name: GetIncomeTransactionsByMonth :many
+SELECT * FROM transactions
+WHERE user_id = $1
+  AND income = true
+  AND date >= $2
+  AND date < $3
+ORDER BY date DESC, created_at DESC;
+
 -- name: GetTransactionByID :one
 SELECT * FROM transactions WHERE id = $1;
 

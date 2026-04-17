@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -29,14 +30,64 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	month := r.URL.Query().Get("month")
-
-	w.Header().Set("Content-Type", "application/json")
+	categoryParam := r.URL.Query().Get("category")
+	income := r.URL.Query().Get("income") == "true"
 
 	if month != "" {
 		if _, err := time.Parse("2006-01", month); err != nil {
 			http.Error(w, "invalid month format, expected YYYY-MM", http.StatusBadRequest)
 			return
 		}
+	}
+
+	var categoryIDs []uuid.UUID
+	if categoryParam != "" {
+		for _, raw := range strings.Split(categoryParam, ",") {
+			id, err := uuid.Parse(strings.TrimSpace(raw))
+			if err != nil {
+				http.Error(w, "invalid category id: "+raw, http.StatusBadRequest)
+				return
+			}
+			categoryIDs = append(categoryIDs, id)
+		}
+	}
+
+	if income && len(categoryIDs) > 0 {
+		http.Error(w, "income and category filters cannot be combined", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	hasMonth := month != ""
+	hasCategories := len(categoryIDs) > 0
+
+	switch {
+	case income && hasMonth:
+		txns, err := h.store.GetIncomeByMonth(r.Context(), userID, month)
+		if err != nil {
+			slog.Error("get income transactions by month", "month", month, "error", err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+	case income:
+		txns, err := h.store.GetIncome(r.Context(), userID)
+		if err != nil {
+			slog.Error("get income transactions", "error", err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+	case hasMonth && hasCategories:
+		txns, err := h.store.GetByMonthAndCategories(r.Context(), userID, month, categoryIDs)
+		if err != nil {
+			slog.Error("get transactions by month and categories", "month", month, "error", err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+	case hasMonth:
 		txns, err := h.store.GetByBillMonths(r.Context(), userID, month)
 		if err != nil {
 			slog.Error("get transactions by month", "month", month, "error", err)
@@ -44,16 +95,23 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
-		return
+	case hasCategories:
+		txns, err := h.store.GetByCategories(r.Context(), userID, categoryIDs)
+		if err != nil {
+			slog.Error("get transactions by categories", "error", err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+	default:
+		txns, err := h.store.GetAll(r.Context(), userID)
+		if err != nil {
+			slog.Error("get all transactions", "error", err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
 	}
-
-	txns, err := h.store.GetAll(r.Context(), userID)
-	if err != nil {
-		slog.Error("get all transactions", "error", err)
-		http.Error(w, "server error", http.StatusInternalServerError)
-		return
-	}
-	_ = json.NewEncoder(w).Encode(ToTransactions(txns))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {

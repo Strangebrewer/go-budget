@@ -46,6 +46,52 @@ func (s *Store) GetByBillMonths(ctx context.Context, userID uuid.UUID, month str
 	return rows, nil
 }
 
+func (s *Store) GetByCategories(ctx context.Context, userID uuid.UUID, categoryIDs []uuid.UUID) ([]db.Transaction, error) {
+	rows, err := s.q.GetTransactionsByCategories(ctx, db.GetTransactionsByCategoriesParams{
+		UserID:  userID,
+		Column2: categoryIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get transactions by categories: %w", err)
+	}
+	return rows, nil
+}
+
+func (s *Store) GetByMonthAndCategories(ctx context.Context, userID uuid.UUID, month string, categoryIDs []uuid.UUID) ([]db.Transaction, error) {
+	start, end := monthDateRange(month)
+	rows, err := s.q.GetTransactionsByMonthAndCategories(ctx, db.GetTransactionsByMonthAndCategoriesParams{
+		UserID:  userID,
+		Date:    start,
+		Date_2:  end,
+		Column4: categoryIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get transactions by month and categories: %w", err)
+	}
+	return rows, nil
+}
+
+func (s *Store) GetIncome(ctx context.Context, userID uuid.UUID) ([]db.Transaction, error) {
+	rows, err := s.q.GetIncomeTransactions(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get income transactions: %w", err)
+	}
+	return rows, nil
+}
+
+func (s *Store) GetIncomeByMonth(ctx context.Context, userID uuid.UUID, month string) ([]db.Transaction, error) {
+	start, end := monthDateRange(month)
+	rows, err := s.q.GetIncomeTransactionsByMonth(ctx, db.GetIncomeTransactionsByMonthParams{
+		UserID: userID,
+		Date:   start,
+		Date_2: end,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get income transactions by month: %w", err)
+	}
+	return rows, nil
+}
+
 func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (db.Transaction, error) {
 	t, err := s.q.GetTransactionByID(ctx, id)
 	if err != nil {
@@ -187,6 +233,16 @@ func threeMonthWindow(month string) []string {
 		}
 	}
 	return months
+}
+
+// monthDateRange returns the start of (month - 2) and the start of (month + 1)
+// as an exclusive upper bound, covering the same three-month window used for bills.
+func monthDateRange(month string) (start, end pgtype.Date) {
+	var y, m int
+	fmt.Sscanf(month, "%d-%d", &y, &m)
+	startTime := time.Date(y, time.Month(m-2), 1, 0, 0, 0, 0, time.UTC)
+	endTime := time.Date(y, time.Month(m+1), 1, 0, 0, 0, 0, time.UTC)
+	return pgtype.Date{Time: startTime, Valid: true}, pgtype.Date{Time: endTime, Valid: true}
 }
 
 // UUIDtoPgtypeUUID converts a uuid.UUID to pgtype.UUID for use by the bill handler.
