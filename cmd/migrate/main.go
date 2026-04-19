@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -46,8 +47,23 @@ func main() {
 			os.Exit(1)
 		}
 		slog.Info("migration rolled back one step")
+	case "force":
+		if len(os.Args) < 3 {
+			slog.Error("usage: migrate force <version>")
+			os.Exit(1)
+		}
+		v, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			slog.Error("invalid version", "version", os.Args[2])
+			os.Exit(1)
+		}
+		if err := m.Force(v); err != nil {
+			slog.Error("migration force failed", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("migration forced", "version", v)
 	default:
-		slog.Error("unknown command, use up or down", "command", os.Args[1])
+		slog.Error("unknown command, use up, down, or force", "command", os.Args[1])
 		os.Exit(1)
 	}
 }

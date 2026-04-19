@@ -5,32 +5,43 @@ import (
 	db "github.com/Strangebrewer/go-budget/db/generated"
 )
 
+type AccountType string
+
+const (
+	AccountTypeAsset AccountType = "asset"
+	AccountTypeDebt  AccountType = "debt"
+)
+
+func (t AccountType) Valid() bool {
+	return t == AccountTypeAsset || t == AccountTypeDebt
+}
+
 type Account struct {
-	ID          string `json:"id"`
-	UserID      string `json:"userId"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Balance     int32  `json:"balance"`
-	Owner       string `json:"owner"`
-	Status      string `json:"status"`
-	Type        string `json:"type"`
+	ID          string      `json:"id"`
+	UserID      string      `json:"userId"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Balance     int32       `json:"balance"`
+	Owner       string      `json:"owner"`
+	Status      string      `json:"status"`
+	Type        AccountType `json:"type"`
 }
 
 type CreateAccountRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Balance     int32  `json:"balance"`
-	Owner       string `json:"owner"`
-	Type        string `json:"type"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Balance     int32       `json:"balance"`
+	Owner       string      `json:"owner"`
+	Type        AccountType `json:"type"`
 }
 
 type UpdateAccountRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Balance     int32  `json:"balance"`
-	Owner       string `json:"owner"`
-	Status      string `json:"status"`
-	Type        string `json:"type"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Balance     int32       `json:"balance"`
+	Owner       string      `json:"owner"`
+	Status      string      `json:"status"`
+	Type        AccountType `json:"type"`
 }
 
 func toAccount(a db.Account) Account {
@@ -42,7 +53,7 @@ func toAccount(a db.Account) Account {
 		Balance:     a.Balance,
 		Owner:       a.Owner,
 		Status:      a.Status,
-		Type:        a.Type,
+		Type:        AccountType(a.Type),
 	}
 }
 
@@ -61,11 +72,11 @@ func ownerOrDefault(s string) string {
 	return s
 }
 
-func typeOrDefault(s string) string {
-	if s == "" {
-		return "debt"
+func typeOrDefault(t AccountType) string {
+	if t == "" {
+		return string(AccountTypeDebt)
 	}
-	return s
+	return string(t)
 }
 
 func newID() (uuid.UUID, error) {

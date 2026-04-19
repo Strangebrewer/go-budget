@@ -57,6 +57,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Type != "" && !req.Type.Valid() {
+		http.Error(w, "type must be 'asset' or 'debt'", http.StatusBadRequest)
+		return
+	}
+
 	a, err := h.store.Create(r.Context(), userID, req)
 	if err != nil {
 		slog.Error("create account", "error", err)
@@ -82,6 +87,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	if req.Type != "" && !req.Type.Valid() {
+		http.Error(w, "type must be 'asset' or 'debt'", http.StatusBadRequest)
+		return
+	}
 
 	a, err := h.store.Update(r.Context(), id, req)
 	if err != nil {
