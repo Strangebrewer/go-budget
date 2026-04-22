@@ -10,7 +10,6 @@ env:
   IMAGE: us-central1-docker.pkg.dev/personal-enterprise-493003/personal-enterprise/go-budget
   WIF_PROVIDER: projects/213672305641/locations/global/workloadIdentityPools/github-actions/providers/github-actions-provider
   SERVICE_ACCOUNT: personal-enterprise-run@personal-enterprise-493003.iam.gserviceaccount.com
-  CLOUD_SQL_INSTANCE: personal-enterprise-493003:us-central1:personal-enterprise
 
 jobs:
   test:
@@ -61,7 +60,6 @@ jobs:
             --platform managed \
             --max-instances 2 \
             --service-account ${{ env.SERVICE_ACCOUNT }} \
-            --add-cloudsql-instances ${{ env.CLOUD_SQL_INSTANCE }} \
             --set-secrets DATABASE_URL=db-url-budget:latest,JWT_PUBLIC_KEY=jwt-public-key:latest \
             --set-env-vars ALLOWED_ORIGINS=${{ vars.ALLOWED_ORIGINS }} \
             --allow-unauthenticated
@@ -99,7 +97,6 @@ jobs:
             --platform managed \
             --max-instances 2 \
             --service-account ${{ env.SERVICE_ACCOUNT }} \
-            --add-cloudsql-instances ${{ env.CLOUD_SQL_INSTANCE }} \
             --set-secrets DATABASE_URL=db-url-budget:latest,JWT_PUBLIC_KEY=jwt-public-key:latest \
             --set-env-vars ALLOWED_ORIGINS=${{ vars.ALLOWED_ORIGINS }} \
             --allow-unauthenticated
