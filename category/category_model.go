@@ -1,9 +1,6 @@
 package category
 
-import (
-	"github.com/google/uuid"
-	db "github.com/Strangebrewer/go-budget/db/generated"
-)
+import "github.com/google/uuid"
 
 type Category struct {
 	ID          string `json:"id"`
@@ -20,23 +17,6 @@ type CreateCategoryRequest struct {
 type UpdateCategoryRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-}
-
-func toCategory(c db.Category) Category {
-	return Category{
-		ID:          c.ID.String(),
-		UserID:      c.UserID.String(),
-		Name:        c.Name,
-		Description: c.Description,
-	}
-}
-
-func toCategories(rows []db.Category) []Category {
-	out := make([]Category, len(rows))
-	for i, c := range rows {
-		out[i] = toCategory(c)
-	}
-	return out
 }
 
 func newID() (uuid.UUID, error) {

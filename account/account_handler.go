@@ -35,7 +35,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(toAccounts(rows))
+	_ = json.NewEncoder(w).Encode(rows)
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(toAccount(a))
+	_ = json.NewEncoder(w).Encode(a)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(toAccount(a))
+	_ = json.NewEncoder(w).Encode(a)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

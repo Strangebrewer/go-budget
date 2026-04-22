@@ -55,16 +55,16 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		txns = transaction.ToTransactions(rows)
+		txns = rows
 	}
 
 	resp := make([]BillResponse, len(bills))
 	for i, b := range bills {
-		resp[i].Bill = toBill(b)
+		resp[i].Bill = b
 		if month != "" {
 			var billTxns []transaction.Transaction
 			for _, t := range txns {
-				if t.BillID != nil && *t.BillID == b.ID.String() {
+				if t.BillID != nil && *t.BillID == b.ID {
 					billTxns = append(billTxns, t)
 				}
 			}
@@ -108,7 +108,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(toBill(b))
+	_ = json.NewEncoder(w).Encode(b)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(toBill(b))
+	_ = json.NewEncoder(w).Encode(b)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -198,15 +198,15 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use the bill's source account unless the request overrides it.
-	sourceID := b.SourceID.String()
+	sourceID := b.SourceID
 	if req.SourceID != "" {
 		sourceID = req.SourceID
 	}
 
 	txnReq := transaction.CreateTransactionRequest{
 		SourceID:    sourceID,
-		BillID:      b.ID.String(),
-		CategoryID:  uuidPtrToStr(uuidPtr(b.CategoryID)),
+		BillID:      b.ID,
+		CategoryID:  uuidPtrToStr(b.CategoryID),
 		Amount:      req.Amount,
 		BillMonth:   req.BillMonth,
 		Date:        req.Date,
@@ -226,7 +226,7 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(transaction.ToTransaction(t))
+	_ = json.NewEncoder(w).Encode(t)
 }
 
 func userIDFromRequest(r *http.Request) (uuid.UUID, error) {

@@ -27,12 +27,17 @@ func main() {
 
 	cfg := config.Load()
 
-	pool, err := db_connection.NewPool(cfg.DatabaseURL)
+	ctx := context.Background()
+	client, db, err := db_connection.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
+	defer func() {
+		if err := client.Disconnect(context.Background()); err != nil {
+			slog.Error("failed to disconnect from database", "error", err)
+		}
+	}()
 
 	authMiddleware, err := middleware.RequireAuth(cfg.JWTPublicKey)
 	if err != nil {
@@ -41,10 +46,10 @@ func main() {
 	}
 
 	application := &app.Application{
-		AccountStore:     account.NewStore(pool),
-		BillStore:        bill.NewStore(pool),
-		CategoryStore:    category.NewStore(pool),
-		TransactionStore: transaction.NewStore(pool),
+		AccountStore:     account.NewStore(db),
+		BillStore:        bill.NewStore(db),
+		CategoryStore:    category.NewStore(db),
+		TransactionStore: transaction.NewStore(db),
 	}
 
 	port := cfg.Port
@@ -67,10 +72,10 @@ func main() {
 	<-quit
 
 	slog.Info("shutting down server")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := srv.HTTPServer.Shutdown(ctx); err != nil {
+	if err := srv.HTTPServer.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server shutdown failed", "error", err)
 		os.Exit(1)
 	}

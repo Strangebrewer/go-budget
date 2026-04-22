@@ -1,9 +1,6 @@
 package account
 
-import (
-	"github.com/google/uuid"
-	db "github.com/Strangebrewer/go-budget/db/generated"
-)
+import "github.com/google/uuid"
 
 type AccountType string
 
@@ -42,27 +39,6 @@ type UpdateAccountRequest struct {
 	Owner       string      `json:"owner"`
 	Status      string      `json:"status"`
 	Type        AccountType `json:"type"`
-}
-
-func toAccount(a db.Account) Account {
-	return Account{
-		ID:          a.ID.String(),
-		UserID:      a.UserID.String(),
-		Name:        a.Name,
-		Description: a.Description,
-		Balance:     a.Balance,
-		Owner:       a.Owner,
-		Status:      a.Status,
-		Type:        AccountType(a.Type),
-	}
-}
-
-func toAccounts(rows []db.Account) []Account {
-	out := make([]Account, len(rows))
-	for i, a := range rows {
-		out[i] = toAccount(a)
-	}
-	return out
 }
 
 func ownerOrDefault(s string) string {

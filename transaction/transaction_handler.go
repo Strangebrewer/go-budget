@@ -70,7 +70,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	case income:
 		txns, err := h.store.GetIncome(r.Context(), userID)
 		if err != nil {
@@ -78,7 +78,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	case hasMonth && hasCategories:
 		txns, err := h.store.GetByMonthAndCategories(r.Context(), userID, month, categoryIDs)
 		if err != nil {
@@ -86,7 +86,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	case hasMonth:
 		txns, err := h.store.GetByBillMonths(r.Context(), userID, month)
 		if err != nil {
@@ -94,7 +94,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	case hasCategories:
 		txns, err := h.store.GetByCategories(r.Context(), userID, categoryIDs)
 		if err != nil {
@@ -102,7 +102,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	default:
 		txns, err := h.store.GetAll(r.Context(), userID)
 		if err != nil {
@@ -110,7 +110,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(ToTransactions(txns))
+		_ = json.NewEncoder(w).Encode(txns)
 	}
 }
 
@@ -142,7 +142,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(ToTransaction(t))
+	_ = json.NewEncoder(w).Encode(t)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +171,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(ToTransaction(t))
+	_ = json.NewEncoder(w).Encode(t)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

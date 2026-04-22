@@ -7,62 +7,110 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	db "github.com/Strangebrewer/go-budget/db/generated"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var ErrNotFound = errors.New("bill not found")
 
+type billDoc struct {
+	ID          string    `bson:"_id"`
+	UserID      string    `bson:"userId"`
+	SourceID    string    `bson:"sourceId"`
+	CategoryID  *string   `bson:"categoryId"`
+	Name        string    `bson:"name"`
+	Description string    `bson:"description"`
+	DueDay      int32     `bson:"dueDay"`
+	Owner       string    `bson:"owner"`
+	Shared      bool      `bson:"shared"`
+	Status      string    `bson:"status"`
+	CreatedAt   time.Time `bson:"createdAt"`
+	UpdatedAt   time.Time `bson:"updatedAt"`
+}
+
+func (d billDoc) toDomain() Bill {
+	return Bill{
+		ID:          d.ID,
+		UserID:      d.UserID,
+		SourceID:    d.SourceID,
+		CategoryID:  d.CategoryID,
+		Name:        d.Name,
+		Description: d.Description,
+		DueDay:      d.DueDay,
+		Owner:       d.Owner,
+		Shared:      d.Shared,
+		Status:      d.Status,
+	}
+}
+
 type Store struct {
-	q *db.Queries
+	col          *mongo.Collection
+	transactions *mongo.Collection
 }
 
-func NewStore(pool *pgxpool.Pool) *Store {
-	return &Store{q: db.New(pool)}
+func NewStore(db *mongo.Database) *Store {
+	return &Store{
+		col:          db.Collection("bills"),
+		transactions: db.Collection("transactions"),
+	}
 }
 
-func (s *Store) GetAll(ctx context.Context, userID uuid.UUID) ([]db.Bill, error) {
-	rows, err := s.q.GetAllBills(ctx, userID)
+func (s *Store) GetAll(ctx context.Context, userID uuid.UUID) ([]Bill, error) {
+	cursor, err := s.col.Find(ctx, bson.D{{Key: "userId", Value: userID.String()}})
 	if err != nil {
 		return nil, fmt.Errorf("get all bills: %w", err)
 	}
-	return rows, nil
-}
+	defer cursor.Close(ctx)
 
-func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (db.Bill, error) {
-	b, err := s.q.GetBillByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return db.Bill{}, ErrNotFound
-		}
-		return db.Bill{}, fmt.Errorf("get bill: %w", err)
+	var docs []billDoc
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, fmt.Errorf("decode bills: %w", err)
 	}
-	return b, nil
+
+	bills := make([]Bill, len(docs))
+	for i, d := range docs {
+		bills[i] = d.toDomain()
+	}
+	return bills, nil
 }
 
-func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateBillRequest) (db.Bill, error) {
+func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (Bill, error) {
+	var doc billDoc
+	err := s.col.FindOne(ctx, bson.D{{Key: "_id", Value: id.String()}}).Decode(&doc)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return Bill{}, ErrNotFound
+		}
+		return Bill{}, fmt.Errorf("get bill: %w", err)
+	}
+	return doc.toDomain(), nil
+}
+
+func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateBillRequest) (Bill, error) {
 	id, err := newID()
 	if err != nil {
-		return db.Bill{}, fmt.Errorf("generate id: %w", err)
+		return Bill{}, fmt.Errorf("generate id: %w", err)
 	}
 
-	sourceID, err := uuid.Parse(req.SourceID)
-	if err != nil {
-		return db.Bill{}, fmt.Errorf("invalid source_id: %w", err)
+	if _, err := uuid.Parse(req.SourceID); err != nil {
+		return Bill{}, fmt.Errorf("invalid source_id: %w", err)
 	}
 
-	categoryID, err := parsePgtypeUUID(req.CategoryID)
-	if err != nil {
-		return db.Bill{}, fmt.Errorf("category_id: %w", err)
+	var categoryID *string
+	if req.CategoryID != "" {
+		if _, err := uuid.Parse(req.CategoryID); err != nil {
+			return Bill{}, fmt.Errorf("invalid category_id: %w", err)
+		}
+		catIDStr := req.CategoryID
+		categoryID = &catIDStr
 	}
 
 	now := time.Now().UTC()
-	b, err := s.q.CreateBill(ctx, db.CreateBillParams{
-		ID:          id,
-		UserID:      userID,
-		SourceID:    sourceID,
+	doc := billDoc{
+		ID:          id.String(),
+		UserID:      userID.String(),
+		SourceID:    req.SourceID,
 		CategoryID:  categoryID,
 		Name:        req.Name,
 		Description: req.Description,
@@ -72,22 +120,26 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateBillRequ
 		Status:      "active",
 		CreatedAt:   now,
 		UpdatedAt:   now,
-	})
-	if err != nil {
-		return db.Bill{}, fmt.Errorf("create bill: %w", err)
 	}
-	return b, nil
+
+	if _, err := s.col.InsertOne(ctx, doc); err != nil {
+		return Bill{}, fmt.Errorf("create bill: %w", err)
+	}
+	return doc.toDomain(), nil
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest) (db.Bill, error) {
-	sourceID, err := uuid.Parse(req.SourceID)
-	if err != nil {
-		return db.Bill{}, fmt.Errorf("invalid source_id: %w", err)
+func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest) (Bill, error) {
+	if _, err := uuid.Parse(req.SourceID); err != nil {
+		return Bill{}, fmt.Errorf("invalid source_id: %w", err)
 	}
 
-	categoryID, err := parsePgtypeUUID(req.CategoryID)
-	if err != nil {
-		return db.Bill{}, fmt.Errorf("category_id: %w", err)
+	var categoryID *string
+	if req.CategoryID != "" {
+		if _, err := uuid.Parse(req.CategoryID); err != nil {
+			return Bill{}, fmt.Errorf("invalid category_id: %w", err)
+		}
+		catIDStr := req.CategoryID
+		categoryID = &catIDStr
 	}
 
 	status := req.Status
@@ -95,30 +147,50 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest)
 		status = "active"
 	}
 
-	b, err := s.q.UpdateBill(ctx, db.UpdateBillParams{
-		ID:          id,
-		SourceID:    sourceID,
-		CategoryID:  categoryID,
-		Name:        req.Name,
-		Description: req.Description,
-		DueDay:      req.DueDay,
-		Owner:       ownerOrDefault(req.Owner),
-		Shared:      req.Shared,
-		Status:      status,
-		UpdatedAt:   time.Now().UTC(),
-	})
+	filter := bson.D{{Key: "_id", Value: id.String()}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "sourceId", Value: req.SourceID},
+		{Key: "categoryId", Value: categoryID},
+		{Key: "name", Value: req.Name},
+		{Key: "description", Value: req.Description},
+		{Key: "dueDay", Value: req.DueDay},
+		{Key: "owner", Value: ownerOrDefault(req.Owner)},
+		{Key: "shared", Value: req.Shared},
+		{Key: "status", Value: status},
+		{Key: "updatedAt", Value: time.Now().UTC()},
+	}}}
+
+	var doc billDoc
+	err := s.col.FindOneAndUpdate(ctx, filter, update,
+		options.FindOneAndUpdate().SetReturnDocument(options.After),
+	).Decode(&doc)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return db.Bill{}, ErrNotFound
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return Bill{}, ErrNotFound
 		}
-		return db.Bill{}, fmt.Errorf("update bill: %w", err)
+		return Bill{}, fmt.Errorf("update bill: %w", err)
 	}
-	return b, nil
+	return doc.toDomain(), nil
 }
 
 func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
-	if err := s.q.DeleteBill(ctx, id); err != nil {
+	idStr := id.String()
+
+	// Null out billId on transactions that reference this bill.
+	_, err := s.transactions.UpdateMany(ctx,
+		bson.D{{Key: "billId", Value: idStr}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "billId", Value: nil}}}},
+	)
+	if err != nil {
+		return fmt.Errorf("null billId on transactions: %w", err)
+	}
+
+	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: idStr}})
+	if err != nil {
 		return fmt.Errorf("delete bill: %w", err)
+	}
+	if result.DeletedCount == 0 {
+		return ErrNotFound
 	}
 	return nil
 }
