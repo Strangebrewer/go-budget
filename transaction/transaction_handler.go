@@ -88,7 +88,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = json.NewEncoder(w).Encode(txns)
 	case hasMonth:
-		txns, err := h.store.GetByBillMonths(r.Context(), userID, month)
+		txns, err := h.store.GetByMonth(r.Context(), userID, month)
 		if err != nil {
 			slog.Error("get transactions by month", "month", month, "error", err)
 			http.Error(w, "server error", http.StatusInternalServerError)
@@ -128,8 +128,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if req.Date == "" {
-		http.Error(w, "date is required", http.StatusBadRequest)
+	if req.Month == "" {
+		http.Error(w, "month is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateType(req.Type); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -158,6 +163,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	if err := validateType(req.Type); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	t, err := h.store.Update(r.Context(), id, req)
 	if err != nil {

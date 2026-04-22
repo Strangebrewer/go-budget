@@ -47,8 +47,7 @@ type UpdateBillRequest struct {
 type PayBillRequest struct {
 	SourceID    string `json:"sourceId"`
 	Amount      int32  `json:"amount"`
-	BillMonth   string `json:"billMonth"`
-	Date        string `json:"date"`
+	Month       string `json:"month"`
 	Description string `json:"description"`
 }
 

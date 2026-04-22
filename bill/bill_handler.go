@@ -49,7 +49,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	var txns []transaction.Transaction
 	if month != "" {
-		rows, err := h.transactionStore.GetByBillMonths(r.Context(), userID, month)
+		rows, err := h.transactionStore.GetByMonth(r.Context(), userID, month)
 		if err != nil {
 			slog.Error("get transactions for bills", "month", month, "error", err)
 			http.Error(w, "server error", http.StatusInternalServerError)
@@ -188,12 +188,8 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if _, err := time.Parse("2006-01", req.BillMonth); err != nil {
-		http.Error(w, "invalid billMonth format, expected YYYY-MM", http.StatusBadRequest)
-		return
-	}
-	if req.Date == "" {
-		http.Error(w, "date is required", http.StatusBadRequest)
+	if _, err := time.Parse("2006-01", req.Month); err != nil {
+		http.Error(w, "invalid month format, expected YYYY-MM", http.StatusBadRequest)
 		return
 	}
 
@@ -208,13 +204,12 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 		BillID:      b.ID,
 		CategoryID:  uuidPtrToStr(b.CategoryID),
 		Amount:      req.Amount,
-		BillMonth:   req.BillMonth,
-		Date:        req.Date,
+		Month:       req.Month,
 		Description: req.Description,
 		Income:      false,
 		Owner:       b.Owner,
 		Shared:      b.Shared,
-		Type:        "expense",
+		Type:        transaction.TransactionTypeDebit,
 	}
 
 	t, err := h.transactionStore.CreateFromBill(r.Context(), userID, txnReq)

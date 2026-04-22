@@ -15,22 +15,21 @@ import (
 var ErrNotFound = errors.New("transaction not found")
 
 type transactionDoc struct {
-	ID            string    `bson:"_id"`
-	UserID        string    `bson:"userId"`
-	SourceID      *string   `bson:"sourceId"`
-	DestinationID *string   `bson:"destinationId"`
-	BillID        *string   `bson:"billId"`
-	CategoryID    *string   `bson:"categoryId"`
-	Amount        int32     `bson:"amount"`
-	BillMonth     *string   `bson:"billMonth"`
-	Date          string    `bson:"date"`
-	Description   string    `bson:"description"`
-	Income        bool      `bson:"income"`
-	Owner         string    `bson:"owner"`
-	Shared        bool      `bson:"shared"`
-	Type          string    `bson:"type"`
-	CreatedAt     time.Time `bson:"createdAt"`
-	UpdatedAt     time.Time `bson:"updatedAt"`
+	ID            string          `bson:"_id"`
+	UserID        string          `bson:"userId"`
+	SourceID      *string         `bson:"sourceId"`
+	DestinationID *string         `bson:"destinationId"`
+	BillID        *string         `bson:"billId"`
+	CategoryID    *string         `bson:"categoryId"`
+	Amount        int32           `bson:"amount"`
+	Month         string          `bson:"month"`
+	Description   string          `bson:"description"`
+	Income        bool            `bson:"income"`
+	Owner         string          `bson:"owner"`
+	Shared        bool            `bson:"shared"`
+	Type          TransactionType `bson:"type"`
+	CreatedAt     time.Time       `bson:"createdAt"`
+	UpdatedAt     time.Time       `bson:"updatedAt"`
 }
 
 func (d transactionDoc) toDomain() Transaction {
@@ -42,8 +41,7 @@ func (d transactionDoc) toDomain() Transaction {
 		BillID:        d.BillID,
 		CategoryID:    d.CategoryID,
 		Amount:        d.Amount,
-		BillMonth:     d.BillMonth,
-		Date:          d.Date,
+		Month:         d.Month,
 		Description:   d.Description,
 		Income:        d.Income,
 		Owner:         d.Owner,
@@ -63,7 +61,7 @@ func NewStore(db *mongo.Database) *Store {
 func (s *Store) GetAll(ctx context.Context, userID uuid.UUID) ([]Transaction, error) {
 	cursor, err := s.col.Find(ctx,
 		bson.D{{Key: "userId", Value: userID.String()}},
-		options.Find().SetSort(bson.D{{Key: "date", Value: -1}, {Key: "createdAt", Value: -1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: -1}, {Key: "createdAt", Value: -1}}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get all transactions: %w", err)
@@ -71,18 +69,18 @@ func (s *Store) GetAll(ctx context.Context, userID uuid.UUID) ([]Transaction, er
 	return decodeCursor(ctx, cursor)
 }
 
-// GetByBillMonths fetches transactions for the given month plus the two preceding months.
-func (s *Store) GetByBillMonths(ctx context.Context, userID uuid.UUID, month string) ([]Transaction, error) {
+// GetByMonth fetches transactions for the given month plus the two preceding months.
+func (s *Store) GetByMonth(ctx context.Context, userID uuid.UUID, month string) ([]Transaction, error) {
 	months := threeMonthWindow(month)
 	cursor, err := s.col.Find(ctx,
 		bson.D{
 			{Key: "userId", Value: userID.String()},
-			{Key: "billMonth", Value: bson.D{{Key: "$in", Value: months}}},
+			{Key: "month", Value: bson.D{{Key: "$in", Value: months}}},
 		},
-		options.Find().SetSort(bson.D{{Key: "billMonth", Value: 1}, {Key: "date", Value: 1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: 1}, {Key: "createdAt", Value: 1}}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("get transactions by bill months: %w", err)
+		return nil, fmt.Errorf("get transactions by month: %w", err)
 	}
 	return decodeCursor(ctx, cursor)
 }
@@ -93,7 +91,7 @@ func (s *Store) GetByCategories(ctx context.Context, userID uuid.UUID, categoryI
 			{Key: "userId", Value: userID.String()},
 			{Key: "categoryId", Value: bson.D{{Key: "$in", Value: uuidStrings(categoryIDs)}}},
 		},
-		options.Find().SetSort(bson.D{{Key: "date", Value: -1}, {Key: "createdAt", Value: -1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: -1}, {Key: "createdAt", Value: -1}}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get transactions by categories: %w", err)
@@ -102,14 +100,13 @@ func (s *Store) GetByCategories(ctx context.Context, userID uuid.UUID, categoryI
 }
 
 func (s *Store) GetByMonthAndCategories(ctx context.Context, userID uuid.UUID, month string, categoryIDs []uuid.UUID) ([]Transaction, error) {
-	start, end := monthDateRange(month)
 	cursor, err := s.col.Find(ctx,
 		bson.D{
 			{Key: "userId", Value: userID.String()},
-			{Key: "date", Value: bson.D{{Key: "$gte", Value: start}, {Key: "$lt", Value: end}}},
+			{Key: "month", Value: bson.D{{Key: "$in", Value: threeMonthWindow(month)}}},
 			{Key: "categoryId", Value: bson.D{{Key: "$in", Value: uuidStrings(categoryIDs)}}},
 		},
-		options.Find().SetSort(bson.D{{Key: "date", Value: -1}, {Key: "createdAt", Value: -1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: -1}, {Key: "createdAt", Value: -1}}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get transactions by month and categories: %w", err)
@@ -123,7 +120,7 @@ func (s *Store) GetIncome(ctx context.Context, userID uuid.UUID) ([]Transaction,
 			{Key: "userId", Value: userID.String()},
 			{Key: "income", Value: true},
 		},
-		options.Find().SetSort(bson.D{{Key: "date", Value: -1}, {Key: "createdAt", Value: -1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: -1}, {Key: "createdAt", Value: -1}}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get income transactions: %w", err)
@@ -132,14 +129,13 @@ func (s *Store) GetIncome(ctx context.Context, userID uuid.UUID) ([]Transaction,
 }
 
 func (s *Store) GetIncomeByMonth(ctx context.Context, userID uuid.UUID, month string) ([]Transaction, error) {
-	start, end := monthDateRange(month)
 	cursor, err := s.col.Find(ctx,
 		bson.D{
 			{Key: "userId", Value: userID.String()},
 			{Key: "income", Value: true},
-			{Key: "date", Value: bson.D{{Key: "$gte", Value: start}, {Key: "$lt", Value: end}}},
+			{Key: "month", Value: bson.D{{Key: "$in", Value: threeMonthWindow(month)}}},
 		},
-		options.Find().SetSort(bson.D{{Key: "date", Value: -1}, {Key: "createdAt", Value: -1}}),
+		options.Find().SetSort(bson.D{{Key: "month", Value: -1}, {Key: "createdAt", Value: -1}}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get income transactions by month: %w", err)
@@ -169,10 +165,6 @@ func (s *Store) CreateFromBill(ctx context.Context, userID uuid.UUID, req Create
 }
 
 func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest) (Transaction, error) {
-	if err := validateDate(req.Date); err != nil {
-		return Transaction{}, err
-	}
-
 	id, err := newID()
 	if err != nil {
 		return Transaction{}, fmt.Errorf("generate id: %w", err)
@@ -187,8 +179,7 @@ func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransact
 		BillID:        nilIfEmpty(req.BillID),
 		CategoryID:    nilIfEmpty(req.CategoryID),
 		Amount:        req.Amount,
-		BillMonth:     nilIfEmpty(req.BillMonth),
-		Date:          req.Date,
+		Month:         req.Month,
 		Description:   req.Description,
 		Income:        req.Income,
 		Owner:         ownerOrDefault(req.Owner),
@@ -205,10 +196,6 @@ func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransact
 }
 
 func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateTransactionRequest) (Transaction, error) {
-	if err := validateDate(req.Date); err != nil {
-		return Transaction{}, err
-	}
-
 	filter := bson.D{{Key: "_id", Value: id.String()}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "sourceId", Value: nilIfEmpty(req.SourceID)},
@@ -216,8 +203,7 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateTransactionR
 		{Key: "billId", Value: nilIfEmpty(req.BillID)},
 		{Key: "categoryId", Value: nilIfEmpty(req.CategoryID)},
 		{Key: "amount", Value: req.Amount},
-		{Key: "billMonth", Value: nilIfEmpty(req.BillMonth)},
-		{Key: "date", Value: req.Date},
+		{Key: "month", Value: req.Month},
 		{Key: "description", Value: req.Description},
 		{Key: "income", Value: req.Income},
 		{Key: "owner", Value: ownerOrDefault(req.Owner)},
@@ -265,16 +251,6 @@ func threeMonthWindow(month string) []string {
 		}
 	}
 	return months
-}
-
-// monthDateRange returns YYYY-MM-DD strings for the start of (month-2) and start of (month+1).
-// Dates are stored as YYYY-MM-DD strings, so string comparison is correct for ISO dates.
-func monthDateRange(month string) (start, end string) {
-	var y, m int
-	fmt.Sscanf(month, "%d-%d", &y, &m)
-	startTime := time.Date(y, time.Month(m-2), 1, 0, 0, 0, 0, time.UTC)
-	endTime := time.Date(y, time.Month(m+1), 1, 0, 0, 0, 0, time.UTC)
-	return startTime.Format("2006-01-02"), endTime.Format("2006-01-02")
 }
 
 func uuidStrings(ids []uuid.UUID) []string {

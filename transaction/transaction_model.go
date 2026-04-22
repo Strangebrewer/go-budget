@@ -2,56 +2,59 @@ package transaction
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 )
 
+type TransactionType string
+
+const (
+	TransactionTypeCredit TransactionType = "credit"
+	TransactionTypeDebit  TransactionType = "debit"
+)
+
 type Transaction struct {
-	ID            string  `json:"id"`
-	UserID        string  `json:"userId"`
-	SourceID      *string `json:"sourceId"`
-	DestinationID *string `json:"destinationId"`
-	BillID        *string `json:"billId"`
-	CategoryID    *string `json:"categoryId"`
-	Amount        int32   `json:"amount"`
-	BillMonth     *string `json:"billMonth"`
-	Date          string  `json:"date"`
-	Description   string  `json:"description"`
-	Income        bool    `json:"income"`
-	Owner         string  `json:"owner"`
-	Shared        bool    `json:"shared"`
-	Type          string  `json:"type"`
+	ID            string          `json:"id"`
+	UserID        string          `json:"userId"`
+	SourceID      *string         `json:"sourceId"`
+	DestinationID *string         `json:"destinationId"`
+	BillID        *string         `json:"billId"`
+	CategoryID    *string         `json:"categoryId"`
+	Amount        int32           `json:"amount"`
+	Month         string          `json:"month"`
+	Description   string          `json:"description"`
+	Income        bool            `json:"income"`
+	Owner         string          `json:"owner"`
+	Shared        bool            `json:"shared"`
+	Type          TransactionType `json:"type"`
 }
 
 type CreateTransactionRequest struct {
-	SourceID      string `json:"sourceId"`
-	DestinationID string `json:"destinationId"`
-	BillID        string `json:"billId"`
-	CategoryID    string `json:"categoryId"`
-	Amount        int32  `json:"amount"`
-	BillMonth     string `json:"billMonth"`
-	Date          string `json:"date"`
-	Description   string `json:"description"`
-	Income        bool   `json:"income"`
-	Owner         string `json:"owner"`
-	Shared        bool   `json:"shared"`
-	Type          string `json:"type"`
+	SourceID      string          `json:"sourceId"`
+	DestinationID string          `json:"destinationId"`
+	BillID        string          `json:"billId"`
+	CategoryID    string          `json:"categoryId"`
+	Amount        int32           `json:"amount"`
+	Month         string          `json:"month"`
+	Description   string          `json:"description"`
+	Income        bool            `json:"income"`
+	Owner         string          `json:"owner"`
+	Shared        bool            `json:"shared"`
+	Type          TransactionType `json:"type"`
 }
 
 type UpdateTransactionRequest struct {
-	SourceID      string `json:"sourceId"`
-	DestinationID string `json:"destinationId"`
-	BillID        string `json:"billId"`
-	CategoryID    string `json:"categoryId"`
-	Amount        int32  `json:"amount"`
-	BillMonth     string `json:"billMonth"`
-	Date          string `json:"date"`
-	Description   string `json:"description"`
-	Income        bool   `json:"income"`
-	Owner         string `json:"owner"`
-	Shared        bool   `json:"shared"`
-	Type          string `json:"type"`
+	SourceID      string          `json:"sourceId"`
+	DestinationID string          `json:"destinationId"`
+	BillID        string          `json:"billId"`
+	CategoryID    string          `json:"categoryId"`
+	Amount        int32           `json:"amount"`
+	Month         string          `json:"month"`
+	Description   string          `json:"description"`
+	Income        bool            `json:"income"`
+	Owner         string          `json:"owner"`
+	Shared        bool            `json:"shared"`
+	Type          TransactionType `json:"type"`
 }
 
 func nilIfEmpty(s string) *string {
@@ -61,13 +64,6 @@ func nilIfEmpty(s string) *string {
 	return &s
 }
 
-func validateDate(s string) error {
-	if _, err := time.Parse("2006-01-02", s); err != nil {
-		return fmt.Errorf("invalid date %q, expected YYYY-MM-DD: %w", s, err)
-	}
-	return nil
-}
-
 func ownerOrDefault(s string) string {
 	if s == "" {
 		return "mine"
@@ -75,11 +71,18 @@ func ownerOrDefault(s string) string {
 	return s
 }
 
-func typeOrDefault(s string) string {
-	if s == "" {
-		return "expense"
+func validateType(t TransactionType) error {
+	if t != TransactionTypeCredit && t != TransactionTypeDebit {
+		return fmt.Errorf("invalid transaction type %q, must be %q or %q", t, TransactionTypeCredit, TransactionTypeDebit)
 	}
-	return s
+	return nil
+}
+
+func typeOrDefault(t TransactionType) TransactionType {
+	if t == "" {
+		return TransactionTypeDebit
+	}
+	return t
 }
 
 func newID() (uuid.UUID, error) {

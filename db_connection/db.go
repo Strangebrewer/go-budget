@@ -48,8 +48,7 @@ func Connect(ctx context.Context, mongoURI string) (*mongo.Client, *mongo.Databa
 	transactions := database.Collection("transactions")
 	_, err = transactions.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "userId", Value: 1}}},
-		{Keys: bson.D{{Key: "billMonth", Value: 1}}},
-		{Keys: bson.D{{Key: "date", Value: 1}}},
+		{Keys: bson.D{{Key: "month", Value: 1}}},
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db_connection: failed to create transaction indexes: %w", err)
