@@ -1,8 +1,8 @@
 package bill
 
 import (
-	"github.com/google/uuid"
 	"github.com/Strangebrewer/go-budget/transaction"
+	"github.com/google/uuid"
 )
 
 type Bill struct {
@@ -30,7 +30,6 @@ type CreateBillRequest struct {
 	Description string `json:"description"`
 	DueDay      int32  `json:"dueDay"`
 	Owner       string `json:"owner"`
-	Shared      bool   `json:"shared"`
 }
 
 type UpdateBillRequest struct {
@@ -40,7 +39,6 @@ type UpdateBillRequest struct {
 	Description string `json:"description"`
 	DueDay      int32  `json:"dueDay"`
 	Owner       string `json:"owner"`
-	Shared      bool   `json:"shared"`
 	Status      string `json:"status"`
 }
 

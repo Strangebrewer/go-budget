@@ -21,7 +21,6 @@ type billDoc struct {
 	CategoryID  *string   `bson:"categoryId"`
 	Name        string    `bson:"name"`
 	Description string    `bson:"description"`
-	DueDay      int32     `bson:"dueDay"`
 	Owner       string    `bson:"owner"`
 	Shared      bool      `bson:"shared"`
 	Status      string    `bson:"status"`
@@ -37,7 +36,6 @@ func (d billDoc) toDomain() Bill {
 		CategoryID:  d.CategoryID,
 		Name:        d.Name,
 		Description: d.Description,
-		DueDay:      d.DueDay,
 		Owner:       d.Owner,
 		Shared:      d.Shared,
 		Status:      d.Status,
@@ -114,9 +112,8 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateBillRequ
 		CategoryID:  categoryID,
 		Name:        req.Name,
 		Description: req.Description,
-		DueDay:      req.DueDay,
 		Owner:       ownerOrDefault(req.Owner),
-		Shared:      req.Shared,
+		Shared:      true,
 		Status:      "active",
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -153,9 +150,7 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest)
 		{Key: "categoryId", Value: categoryID},
 		{Key: "name", Value: req.Name},
 		{Key: "description", Value: req.Description},
-		{Key: "dueDay", Value: req.DueDay},
 		{Key: "owner", Value: ownerOrDefault(req.Owner)},
-		{Key: "shared", Value: req.Shared},
 		{Key: "status", Value: status},
 		{Key: "updatedAt", Value: time.Now().UTC()},
 	}}}
