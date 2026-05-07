@@ -18,6 +18,7 @@ import (
 	"github.com/Strangebrewer/go-budget/db_connection"
 	"github.com/Strangebrewer/go-budget/middleware"
 	"github.com/Strangebrewer/go-budget/server"
+	"github.com/Strangebrewer/go-budget/tracer"
 	"github.com/Strangebrewer/go-budget/transaction"
 )
 
@@ -45,11 +46,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	var tracerClient *tracer.Client
+	if cfg.TracerURL != "" && cfg.TracerServiceKey != "" {
+		tracerClient = tracer.NewClient(cfg.TracerURL, cfg.TracerServiceKey, "go-budget")
+	}
+
 	application := &app.Application{
 		AccountStore:     account.NewStore(db),
 		BillStore:        bill.NewStore(db),
 		CategoryStore:    category.NewStore(db),
 		TransactionStore: transaction.NewStore(db),
+		Tracer:           tracerClient,
 	}
 
 	port := cfg.Port

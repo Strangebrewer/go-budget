@@ -125,7 +125,7 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateBillRequ
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest) (Bill, error) {
+func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateBillRequest) (Bill, error) {
 	if _, err := uuid.Parse(req.SourceID); err != nil {
 		return Bill{}, fmt.Errorf("invalid source_id: %w", err)
 	}
@@ -144,7 +144,7 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest)
 		status = "active"
 	}
 
-	filter := bson.D{{Key: "_id", Value: id.String()}}
+	filter := bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "sourceId", Value: req.SourceID},
 		{Key: "categoryId", Value: categoryID},
@@ -168,24 +168,28 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateBillRequest)
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *Store) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	idStr := id.String()
 
-	// Null out billId on transactions that reference this bill.
-	_, err := s.transactions.UpdateMany(ctx,
-		bson.D{{Key: "billId", Value: idStr}},
-		bson.D{{Key: "$set", Value: bson.D{{Key: "billId", Value: nil}}}},
-	)
-	if err != nil {
-		return fmt.Errorf("null billId on transactions: %w", err)
-	}
-
-	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: idStr}})
+	// Delete the bill first — cascade only if ownership is confirmed.
+	result, err := s.col.DeleteOne(ctx, bson.D{
+		{Key: "_id", Value: idStr},
+		{Key: "userId", Value: userID.String()},
+	})
 	if err != nil {
 		return fmt.Errorf("delete bill: %w", err)
 	}
 	if result.DeletedCount == 0 {
 		return ErrNotFound
+	}
+
+	// Null out billId on transactions that reference this bill.
+	_, err = s.transactions.UpdateMany(ctx,
+		bson.D{{Key: "billId", Value: idStr}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "billId", Value: nil}}}},
+	)
+	if err != nil {
+		return fmt.Errorf("null billId on transactions: %w", err)
 	}
 	return nil
 }

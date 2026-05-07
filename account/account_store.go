@@ -114,8 +114,8 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateAccountR
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateAccountRequest) (Account, error) {
-	filter := bson.D{{Key: "_id", Value: id.String()}}
+func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateAccountRequest) (Account, error) {
+	filter := bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "name", Value: req.Name},
 		{Key: "description", Value: req.Description},
@@ -139,8 +139,20 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateAccountReque
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *Store) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	idStr := id.String()
+
+	// Delete the account first — cascade only if ownership is confirmed.
+	result, err := s.col.DeleteOne(ctx, bson.D{
+		{Key: "_id", Value: idStr},
+		{Key: "userId", Value: userID.String()},
+	})
+	if err != nil {
+		return fmt.Errorf("delete account: %w", err)
+	}
+	if result.DeletedCount == 0 {
+		return ErrNotFound
+	}
 
 	// Find bills sourced from this account so we can cascade their transactions.
 	cursor, err := s.bills.Find(ctx, bson.D{{Key: "sourceId", Value: idStr}})
@@ -189,12 +201,5 @@ func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("null destinationId on transactions: %w", err)
 	}
 
-	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: idStr}})
-	if err != nil {
-		return fmt.Errorf("delete account: %w", err)
-	}
-	if result.DeletedCount == 0 {
-		return ErrNotFound
-	}
 	return nil
 }

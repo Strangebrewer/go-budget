@@ -195,8 +195,8 @@ func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransact
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateTransactionRequest) (Transaction, error) {
-	filter := bson.D{{Key: "_id", Value: id.String()}}
+func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateTransactionRequest) (Transaction, error) {
+	filter := bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "sourceId", Value: nilIfEmpty(req.SourceID)},
 		{Key: "destinationId", Value: nilIfEmpty(req.DestinationID)},
@@ -225,8 +225,8 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateTransactionR
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
-	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.String()}})
+func (s *Store) Delete(ctx context.Context, id, userID uuid.UUID) error {
+	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}})
 	if err != nil {
 		return fmt.Errorf("delete transaction: %w", err)
 	}

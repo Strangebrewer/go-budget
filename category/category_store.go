@@ -93,8 +93,8 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateCategory
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateCategoryRequest) (Category, error) {
-	filter := bson.D{{Key: "_id", Value: id.String()}}
+func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateCategoryRequest) (Category, error) {
+	filter := bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}}
 	update := bson.D{{Key: "$set", Value: bson.D{
 		{Key: "name", Value: req.Name},
 		{Key: "description", Value: req.Description},
@@ -114,8 +114,8 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, req UpdateCategoryRequ
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
-	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.String()}})
+func (s *Store) Delete(ctx context.Context, id, userID uuid.UUID) error {
+	result, err := s.col.DeleteOne(ctx, bson.D{{Key: "_id", Value: id.String()}, {Key: "userId", Value: userID.String()}})
 	if err != nil {
 		return fmt.Errorf("delete category: %w", err)
 	}
