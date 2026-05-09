@@ -17,9 +17,9 @@ func registerRoutes(r chi.Router, application *app.Application, authMiddleware f
 	r.Get("/health", health.Handler)
 
 	r.With(authMiddleware).Group(func(r chi.Router) {
-		r.Mount("/accounts", account.Routes(application.AccountStore, application.Tracer))
-		r.Mount("/categories", category.Routes(application.CategoryStore, application.Tracer))
-		r.Mount("/bills", bill.Routes(application.BillStore, application.TransactionStore, application.Tracer))
-		r.Mount("/transactions", transaction.Routes(application.TransactionStore, application.Tracer))
+		r.Mount("/accounts", account.Routes(application.AccountStore))
+		r.Mount("/categories", category.Routes(application.CategoryStore))
+		r.Mount("/bills", bill.Routes(application.BillStore, application.TransactionStore))
+		r.Mount("/transactions", transaction.Routes(application.TransactionStore))
 	})
 }

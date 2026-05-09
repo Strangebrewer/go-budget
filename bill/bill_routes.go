@@ -1,14 +1,13 @@
 package bill
 
 import (
-	"github.com/Strangebrewer/go-budget/tracer"
 	"github.com/Strangebrewer/go-budget/transaction"
 	"github.com/go-chi/chi/v5"
 )
 
-func Routes(store *Store, transactionStore *transaction.Store, tc *tracer.Client) chi.Router {
+func Routes(store *Store, transactionStore *transaction.Store) chi.Router {
 	r := chi.NewRouter()
-	h := NewHandler(store, transactionStore, tc)
+	h := NewHandler(store, transactionStore)
 
 	r.Get("/", h.GetAll)
 	r.Post("/", h.Create)

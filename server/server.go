@@ -21,12 +21,13 @@ func New(addr string, allowedOrigins []string, application *app.Application, aut
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: allowedOrigins,
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-Trace-ID"},
 		MaxAge:         300,
 	}))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger(slog.Default()))
 	r.Use(chimiddleware.Recoverer)
+	r.Use(middleware.Tracing(application.Tracer))
 
 	registerRoutes(r, application, authMiddleware)
 
