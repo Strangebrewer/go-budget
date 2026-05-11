@@ -60,8 +60,8 @@ jobs:
             --platform managed \
             --max-instances 2 \
             --service-account ${{ env.SERVICE_ACCOUNT }} \
-            --set-secrets DATABASE_URL=db-url-budget:latest,JWT_PUBLIC_KEY=jwt-public-key:latest \
-            --set-env-vars ALLOWED_ORIGINS=${{ vars.ALLOWED_ORIGINS }} \
+            --set-secrets DATABASE_URL=db-url-budget:latest,JWT_PUBLIC_KEY=jwt-public-key:latest,TRACER_SERVICE_KEY=tracer-service-key:latest \
+            --set-env-vars ALLOWED_ORIGINS=${{ vars.ALLOWED_ORIGINS }},TRACER_SERVICE_URL=${{ vars.TRACER_SERVICE_URL }},PUBSUB_PROJECT_ID=${{ vars.PUBSUB_PROJECT_ID }} \
             --allow-unauthenticated
 
   deploy-prod:
