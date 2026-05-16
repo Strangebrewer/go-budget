@@ -57,6 +57,7 @@ func main() {
 		CategoryStore:    category.NewStore(db),
 		TransactionStore: transaction.NewStore(db),
 		Tracer:           tracerClient,
+		RubeOwidNextURL:  cfg.RubeOwidNextURL,
 	}
 
 	port := cfg.Port

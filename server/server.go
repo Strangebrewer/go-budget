@@ -6,6 +6,7 @@ import (
 
 	"github.com/Strangebrewer/go-budget/app"
 	"github.com/Strangebrewer/go-budget/middleware"
+	"github.com/Strangebrewer/go-budget/rube"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -27,9 +28,11 @@ func New(addr string, allowedOrigins []string, application *app.Application, aut
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger(slog.Default()))
 	r.Use(chimiddleware.Recoverer)
-	r.Use(middleware.Tracing(application.Tracer))
-
-	registerRoutes(r, application, authMiddleware)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Tracing(application.Tracer))
+		registerRoutes(r, application, authMiddleware)
+	})
+	r.Mount("/rube", rube.Routes(application.RubeOwidNextURL, application.Tracer))
 
 	return &Server{
 		HTTPServer: &http.Server{

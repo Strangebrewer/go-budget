@@ -14,4 +14,5 @@ type Application struct {
 	CategoryStore    *category.Store
 	TransactionStore *transaction.Store
 	Tracer           *tracer.Client
+	RubeOwidNextURL  string
 }
