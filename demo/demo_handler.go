@@ -245,9 +245,12 @@ func (h *Handler) seedBillPayments(ctx context.Context, userID uuid.UUID, bills 
 }
 
 func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accountIDs [6]string, categoryIDs [3]string, expiresAt time.Time) error {
-	// accountIDs: 0=My Checking, 2=My Visa  |  categoryIDs: 0=Food, 1=Gas, 2=Other
-	checking := accountIDs[0]
-	visa := accountIDs[2]
+	// accountIDs: 0=My Checking, 2=My Visa, 3=Her Checking, 5=Her Visa
+	// categoryIDs: 0=Food, 1=Gas, 2=Other
+	myChecking := accountIDs[0]
+	myVisa := accountIDs[2]
+	herChecking := accountIDs[3]
+	herVisa := accountIDs[5]
 	food := categoryIDs[0]
 	gas := categoryIDs[1]
 	other := categoryIDs[2]
@@ -260,29 +263,30 @@ func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accoun
 		category string
 		amount   int32
 		source   string
+		owner    string
 		month    string
 	}
 	seeds := []seed{
-		{"Whole Foods", food, 8432, checking, m0},
-		{"Trader Joe's", food, 6218, checking, m0},
-		{"Chipotle", food, 1245, visa, m0},
-		{"Sushi restaurant", food, 8900, visa, m0},
-		{"Grocery run", food, 7823, checking, m0},
-		{"Coffee shop", food, 645, visa, m0},
-		{"Pizza delivery", food, 2840, visa, m0},
-		{"Shell", gas, 5200, checking, m1},
-		{"BP", gas, 4800, checking, m1},
-		{"Chevron", gas, 5500, checking, m1},
-		{"Car wash", gas, 1600, checking, m1},
-		{"Shell", gas, 4900, checking, m1},
-		{"BP", gas, 5100, checking, m1},
-		{"Amazon", other, 4200, visa, m2},
-		{"Target", other, 8900, visa, m2},
-		{"Home Depot", other, 12300, checking, m2},
-		{"Pharmacy", other, 2345, checking, m2},
-		{"Gym membership", other, 4500, checking, m2},
-		{"Phone bill", other, 8000, checking, m2},
-		{"Farmers market", food, 4500, checking, m1},
+		{"Whole Foods", food, 8432, myChecking, "mine", m0},
+		{"Trader Joe's", food, 6218, herChecking, "hers", m0},
+		{"Chipotle", food, 1245, myVisa, "mine", m0},
+		{"Sushi restaurant", food, 8900, herVisa, "hers", m0},
+		{"Grocery run", food, 7823, myChecking, "mine", m0},
+		{"Coffee shop", food, 645, herVisa, "hers", m0},
+		{"Pizza delivery", food, 2840, myVisa, "mine", m0},
+		{"Shell", gas, 5200, myChecking, "mine", m1},
+		{"BP", gas, 4800, herChecking, "hers", m1},
+		{"Chevron", gas, 5500, myChecking, "mine", m1},
+		{"Car wash", gas, 1600, myChecking, "mine", m1},
+		{"Shell", gas, 4900, herChecking, "hers", m1},
+		{"BP", gas, 5100, myChecking, "mine", m1},
+		{"Amazon", other, 4200, myVisa, "mine", m2},
+		{"Target", other, 8900, herVisa, "hers", m2},
+		{"Home Depot", other, 12300, myChecking, "mine", m2},
+		{"Pharmacy", other, 2345, herChecking, "hers", m2},
+		{"Gym membership", other, 4500, myChecking, "mine", m2},
+		{"Phone bill", other, 8000, myChecking, "mine", m2},
+		{"Farmers market", food, 4500, herChecking, "hers", m1},
 	}
 
 	for _, s := range seeds {
@@ -293,6 +297,7 @@ func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accoun
 			Month:       s.month,
 			Description: s.desc,
 			Type:        transaction.TransactionTypeDebit,
+			Owner:       s.owner,
 			Shared:      true,
 		}, &expiresAt)
 		if err != nil {
