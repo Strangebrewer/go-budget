@@ -21,9 +21,15 @@ func Connect(ctx context.Context, mongoURI string) (*mongo.Client, *mongo.Databa
 
 	database := client.Database("budget")
 
+	ttlIndex := mongo.IndexModel{
+		Keys:    bson.D{{Key: "expiresAt", Value: 1}},
+		Options: options.Index().SetExpireAfterSeconds(0).SetSparse(true),
+	}
+
 	accounts := database.Collection("accounts")
 	_, err = accounts.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "userId", Value: 1}}},
+		ttlIndex,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db_connection: failed to create account indexes: %w", err)
@@ -32,6 +38,7 @@ func Connect(ctx context.Context, mongoURI string) (*mongo.Client, *mongo.Databa
 	bills := database.Collection("bills")
 	_, err = bills.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "userId", Value: 1}}},
+		ttlIndex,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db_connection: failed to create bill indexes: %w", err)
@@ -40,6 +47,7 @@ func Connect(ctx context.Context, mongoURI string) (*mongo.Client, *mongo.Databa
 	categories := database.Collection("categories")
 	_, err = categories.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "userId", Value: 1}}},
+		ttlIndex,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db_connection: failed to create category indexes: %w", err)
@@ -49,6 +57,7 @@ func Connect(ctx context.Context, mongoURI string) (*mongo.Client, *mongo.Databa
 	_, err = transactions.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "userId", Value: 1}}},
 		{Keys: bson.D{{Key: "month", Value: 1}}},
+		ttlIndex,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("db_connection: failed to create transaction indexes: %w", err)

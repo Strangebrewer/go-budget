@@ -15,4 +15,5 @@ type Application struct {
 	TransactionStore *transaction.Store
 	Tracer           *tracer.Client
 	RubeOwidNextURL  string
+	PubSubAudience   string
 }

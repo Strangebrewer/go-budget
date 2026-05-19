@@ -1,21 +1,24 @@
 package bill
 
 import (
+	"time"
+
 	"github.com/Strangebrewer/go-budget/transaction"
 	"github.com/google/uuid"
 )
 
 type Bill struct {
-	ID          string  `json:"id"`
-	UserID      string  `json:"userId"`
-	SourceID    string  `json:"sourceId"`
-	CategoryID  *string `json:"categoryId"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	DueDay      int32   `json:"dueDay"`
-	Owner       string  `json:"owner"`
-	Shared      bool    `json:"shared"`
-	Status      string  `json:"status"`
+	ID          string     `json:"id"`
+	UserID      string     `json:"userId"`
+	SourceID    string     `json:"sourceId"`
+	CategoryID  *string    `json:"categoryId"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	DueDay      int32      `json:"dueDay"`
+	Owner       string     `json:"owner"`
+	Shared      bool       `json:"shared"`
+	Status      string     `json:"status"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
 }
 
 type BillResponse struct {

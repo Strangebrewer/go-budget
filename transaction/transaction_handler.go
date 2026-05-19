@@ -138,7 +138,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := h.store.Create(r.Context(), userID, req)
+	if middleware.IsDemoFromContext(r.Context()) {
+		count, err := h.store.CountByUser(r.Context(), userID)
+		if err != nil {
+			slog.Error("count transactions", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		if count >= 80 {
+			http.Error(w, "demo transaction limit reached", http.StatusForbidden)
+			return
+		}
+	}
+
+	t, err := h.store.Create(r.Context(), userID, req, nil)
 	if err != nil {
 		slog.Error("create transaction", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

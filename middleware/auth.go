@@ -12,9 +12,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type userIDKeyType int
+type contextKey int
 
-const userIDKey userIDKeyType = iota
+const (
+	userIDKey contextKey = iota
+	isDemoKey
+)
 
 var ErrInvalidToken = errors.New("invalid token")
 
@@ -34,13 +37,14 @@ func RequireAuth(publicKeyPEM string) (func(http.Handler) http.Handler, error) {
 				return
 			}
 
-			userID, err := verifyAccessJWT(tokenStr, pub)
+			userID, isDemo, err := verifyAccessJWT(tokenStr, pub)
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return
 			}
 
 			ctx := context.WithValue(r.Context(), userIDKey, userID)
+			ctx = context.WithValue(ctx, isDemoKey, isDemo)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}, nil
@@ -52,7 +56,13 @@ func UserIDFromContext(ctx context.Context) (string, bool) {
 	return id, ok
 }
 
-func verifyAccessJWT(tokenStr string, pub *rsa.PublicKey) (string, error) {
+// IsDemoFromContext reports whether the authenticated user is a demo account.
+func IsDemoFromContext(ctx context.Context) bool {
+	v, _ := ctx.Value(isDemoKey).(bool)
+	return v
+}
+
+func verifyAccessJWT(tokenStr string, pub *rsa.PublicKey) (string, bool, error) {
 	tok, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, ErrInvalidToken
@@ -60,24 +70,25 @@ func verifyAccessJWT(tokenStr string, pub *rsa.PublicKey) (string, error) {
 		return pub, nil
 	})
 	if err != nil || !tok.Valid {
-		return "", ErrInvalidToken
+		return "", false, ErrInvalidToken
 	}
 
 	claims, ok := tok.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", ErrInvalidToken
+		return "", false, ErrInvalidToken
 	}
 
 	if typ, _ := claims["typ"].(string); typ != "access" {
-		return "", ErrInvalidToken
+		return "", false, ErrInvalidToken
 	}
 
 	sub, ok := claims["sub"].(string)
 	if !ok || sub == "" {
-		return "", ErrInvalidToken
+		return "", false, ErrInvalidToken
 	}
 
-	return sub, nil
+	isDemo, _ := claims["isDemo"].(bool)
+	return sub, isDemo, nil
 }
 
 func bearerToken(r *http.Request) (string, bool) {

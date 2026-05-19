@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,6 +28,7 @@ type Transaction struct {
 	Owner         string          `json:"owner"`
 	Shared        bool            `json:"shared"`
 	Type          TransactionType `json:"type"`
+	ExpiresAt     *time.Time      `json:"expiresAt,omitempty"`
 }
 
 type CreateTransactionRequest struct {

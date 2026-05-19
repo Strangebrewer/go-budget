@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Strangebrewer/go-budget/app"
+	"github.com/Strangebrewer/go-budget/demo"
 	"github.com/Strangebrewer/go-budget/middleware"
 	"github.com/Strangebrewer/go-budget/rube"
 	"github.com/go-chi/chi/v5"
@@ -33,6 +34,14 @@ func New(addr string, allowedOrigins []string, application *app.Application, aut
 		registerRoutes(r, application, authMiddleware)
 	})
 	r.Mount("/rube", rube.Routes(application.RubeOwidNextURL, application.Tracer))
+	r.Mount("/pubsub", demo.Routes(
+		application.AccountStore,
+		application.BillStore,
+		application.CategoryStore,
+		application.TransactionStore,
+		application.Tracer,
+		application.PubSubAudience,
+	))
 
 	return &Server{
 		HTTPServer: &http.Server{

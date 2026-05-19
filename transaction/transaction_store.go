@@ -28,6 +28,7 @@ type transactionDoc struct {
 	Owner         string          `bson:"owner"`
 	Shared        bool            `bson:"shared"`
 	Type          TransactionType `bson:"type"`
+	ExpiresAt     *time.Time      `bson:"expiresAt,omitempty"`
 	CreatedAt     time.Time       `bson:"createdAt"`
 	UpdatedAt     time.Time       `bson:"updatedAt"`
 }
@@ -47,6 +48,7 @@ func (d transactionDoc) toDomain() Transaction {
 		Owner:         d.Owner,
 		Shared:        d.Shared,
 		Type:          d.Type,
+		ExpiresAt:     d.ExpiresAt,
 	}
 }
 
@@ -155,16 +157,16 @@ func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (Transaction, error) 
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest) (Transaction, error) {
-	return s.create(ctx, userID, req)
+func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest, expiresAt *time.Time) (Transaction, error) {
+	return s.create(ctx, userID, req, expiresAt)
 }
 
 // CreateFromBill is called by the bill handler's PayBill endpoint.
-func (s *Store) CreateFromBill(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest) (Transaction, error) {
-	return s.create(ctx, userID, req)
+func (s *Store) CreateFromBill(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest, expiresAt *time.Time) (Transaction, error) {
+	return s.create(ctx, userID, req, expiresAt)
 }
 
-func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest) (Transaction, error) {
+func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransactionRequest, expiresAt *time.Time) (Transaction, error) {
 	id, err := newID()
 	if err != nil {
 		return Transaction{}, fmt.Errorf("generate id: %w", err)
@@ -185,6 +187,7 @@ func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransact
 		Owner:         ownerOrDefault(req.Owner),
 		Shared:        req.Shared,
 		Type:          typeOrDefault(req.Type),
+		ExpiresAt:     expiresAt,
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}
@@ -193,6 +196,22 @@ func (s *Store) create(ctx context.Context, userID uuid.UUID, req CreateTransact
 		return Transaction{}, fmt.Errorf("create transaction: %w", err)
 	}
 	return doc.toDomain(), nil
+}
+
+func (s *Store) CountByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	count, err := s.col.CountDocuments(ctx, bson.D{{Key: "userId", Value: userID.String()}})
+	if err != nil {
+		return 0, fmt.Errorf("count transactions: %w", err)
+	}
+	return count, nil
+}
+
+func (s *Store) CountByBill(ctx context.Context, billID uuid.UUID) (int64, error) {
+	count, err := s.col.CountDocuments(ctx, bson.D{{Key: "billId", Value: billID.String()}})
+	if err != nil {
+		return 0, fmt.Errorf("count bill payments: %w", err)
+	}
+	return count, nil
 }
 
 func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateTransactionRequest) (Transaction, error) {

@@ -57,7 +57,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := h.store.Create(r.Context(), userID, req)
+	if middleware.IsDemoFromContext(r.Context()) {
+		count, err := h.store.CountByUser(r.Context(), userID)
+		if err != nil {
+			slog.Error("count categories", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		if count >= 3 {
+			http.Error(w, "demo category limit reached", http.StatusForbidden)
+			return
+		}
+	}
+
+	c, err := h.store.Create(r.Context(), userID, req, nil)
 	if err != nil {
 		slog.Error("create category", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

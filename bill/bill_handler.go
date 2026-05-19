@@ -99,7 +99,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := h.store.Create(r.Context(), userID, req)
+	if middleware.IsDemoFromContext(r.Context()) {
+		count, err := h.store.CountByUser(r.Context(), userID)
+		if err != nil {
+			slog.Error("count bills", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		if count >= 8 {
+			http.Error(w, "demo bill limit reached", http.StatusForbidden)
+			return
+		}
+	}
+
+	b, err := h.store.Create(r.Context(), userID, req, nil)
 	if err != nil {
 		slog.Error("create bill", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -211,6 +224,19 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 		sourceID = req.SourceID
 	}
 
+	if middleware.IsDemoFromContext(r.Context()) {
+		count, err := h.transactionStore.CountByBill(r.Context(), id)
+		if err != nil {
+			slog.Error("count bill payments", "bill_id", id, "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		if count >= 20 {
+			http.Error(w, "demo bill payment limit reached", http.StatusForbidden)
+			return
+		}
+	}
+
 	txnReq := transaction.CreateTransactionRequest{
 		SourceID:    sourceID,
 		BillID:      b.ID,
@@ -224,7 +250,7 @@ func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 		Type:        transaction.TransactionTypeDebit,
 	}
 
-	t, err := h.transactionStore.CreateFromBill(r.Context(), userID, txnReq)
+	t, err := h.transactionStore.CreateFromBill(r.Context(), userID, txnReq, nil)
 	if err != nil {
 		slog.Error("pay bill: create transaction", "bill_id", id, "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

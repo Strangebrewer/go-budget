@@ -58,6 +58,7 @@ func main() {
 		TransactionStore: transaction.NewStore(db),
 		Tracer:           tracerClient,
 		RubeOwidNextURL:  cfg.RubeOwidNextURL,
+		PubSubAudience:   cfg.PubSubAudience,
 	}
 
 	port := cfg.Port

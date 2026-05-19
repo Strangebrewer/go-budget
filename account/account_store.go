@@ -15,16 +15,17 @@ import (
 var ErrNotFound = errors.New("account not found")
 
 type accountDoc struct {
-	ID          string    `bson:"_id"`
-	UserID      string    `bson:"userId"`
-	Name        string    `bson:"name"`
-	Description string    `bson:"description"`
-	Balance     int32     `bson:"balance"`
-	Owner       string    `bson:"owner"`
-	Status      string    `bson:"status"`
-	Type        string    `bson:"type"`
-	CreatedAt   time.Time `bson:"createdAt"`
-	UpdatedAt   time.Time `bson:"updatedAt"`
+	ID          string     `bson:"_id"`
+	UserID      string     `bson:"userId"`
+	Name        string     `bson:"name"`
+	Description string     `bson:"description"`
+	Balance     int32      `bson:"balance"`
+	Owner       string     `bson:"owner"`
+	Status      string     `bson:"status"`
+	Type        string     `bson:"type"`
+	ExpiresAt   *time.Time `bson:"expiresAt,omitempty"`
+	CreatedAt   time.Time  `bson:"createdAt"`
+	UpdatedAt   time.Time  `bson:"updatedAt"`
 }
 
 func (d accountDoc) toDomain() Account {
@@ -37,6 +38,7 @@ func (d accountDoc) toDomain() Account {
 		Owner:       d.Owner,
 		Status:      d.Status,
 		Type:        AccountType(d.Type),
+		ExpiresAt:   d.ExpiresAt,
 	}
 }
 
@@ -88,7 +90,7 @@ func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (Account, error) {
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateAccountRequest) (Account, error) {
+func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateAccountRequest, expiresAt *time.Time) (Account, error) {
 	id, err := newID()
 	if err != nil {
 		return Account{}, fmt.Errorf("generate id: %w", err)
@@ -104,6 +106,7 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateAccountR
 		Owner:       ownerOrDefault(req.Owner),
 		Status:      "active",
 		Type:        typeOrDefault(req.Type),
+		ExpiresAt:   expiresAt,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -112,6 +115,14 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateAccountR
 		return Account{}, fmt.Errorf("create account: %w", err)
 	}
 	return doc.toDomain(), nil
+}
+
+func (s *Store) CountByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	count, err := s.col.CountDocuments(ctx, bson.D{{Key: "userId", Value: userID.String()}})
+	if err != nil {
+		return 0, fmt.Errorf("count accounts: %w", err)
+	}
+	return count, nil
 }
 
 func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateAccountRequest) (Account, error) {

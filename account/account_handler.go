@@ -62,7 +62,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := h.store.Create(r.Context(), userID, req)
+	if middleware.IsDemoFromContext(r.Context()) {
+		count, err := h.store.CountByUser(r.Context(), userID)
+		if err != nil {
+			slog.Error("count accounts", "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		if count >= 6 {
+			http.Error(w, "demo account limit reached", http.StatusForbidden)
+			return
+		}
+	}
+
+	a, err := h.store.Create(r.Context(), userID, req, nil)
 	if err != nil {
 		slog.Error("create account", "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)

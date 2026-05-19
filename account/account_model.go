@@ -1,6 +1,10 @@
 package account
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type AccountType string
 
@@ -22,6 +26,7 @@ type Account struct {
 	Owner       string      `json:"owner"`
 	Status      string      `json:"status"`
 	Type        AccountType `json:"type"`
+	ExpiresAt   *time.Time  `json:"expiresAt,omitempty"`
 }
 
 type CreateAccountRequest struct {

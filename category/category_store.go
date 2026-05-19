@@ -15,12 +15,13 @@ import (
 var ErrNotFound = errors.New("category not found")
 
 type categoryDoc struct {
-	ID          string    `bson:"_id"`
-	UserID      string    `bson:"userId"`
-	Name        string    `bson:"name"`
-	Description string    `bson:"description"`
-	CreatedAt   time.Time `bson:"createdAt"`
-	UpdatedAt   time.Time `bson:"updatedAt"`
+	ID          string     `bson:"_id"`
+	UserID      string     `bson:"userId"`
+	Name        string     `bson:"name"`
+	Description string     `bson:"description"`
+	ExpiresAt   *time.Time `bson:"expiresAt,omitempty"`
+	CreatedAt   time.Time  `bson:"createdAt"`
+	UpdatedAt   time.Time  `bson:"updatedAt"`
 }
 
 func (d categoryDoc) toDomain() Category {
@@ -29,6 +30,7 @@ func (d categoryDoc) toDomain() Category {
 		UserID:      d.UserID,
 		Name:        d.Name,
 		Description: d.Description,
+		ExpiresAt:   d.ExpiresAt,
 	}
 }
 
@@ -71,7 +73,7 @@ func (s *Store) GetByID(ctx context.Context, id uuid.UUID) (Category, error) {
 	return doc.toDomain(), nil
 }
 
-func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateCategoryRequest) (Category, error) {
+func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateCategoryRequest, expiresAt *time.Time) (Category, error) {
 	id, err := newID()
 	if err != nil {
 		return Category{}, fmt.Errorf("generate id: %w", err)
@@ -83,6 +85,7 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateCategory
 		UserID:      userID.String(),
 		Name:        req.Name,
 		Description: req.Description,
+		ExpiresAt:   expiresAt,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -91,6 +94,14 @@ func (s *Store) Create(ctx context.Context, userID uuid.UUID, req CreateCategory
 		return Category{}, fmt.Errorf("create category: %w", err)
 	}
 	return doc.toDomain(), nil
+}
+
+func (s *Store) CountByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	count, err := s.col.CountDocuments(ctx, bson.D{{Key: "userId", Value: userID.String()}})
+	if err != nil {
+		return 0, fmt.Errorf("count categories: %w", err)
+	}
+	return count, nil
 }
 
 func (s *Store) Update(ctx context.Context, id, userID uuid.UUID, req UpdateCategoryRequest) (Category, error) {
