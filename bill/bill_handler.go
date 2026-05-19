@@ -106,7 +106,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
-		if count >= 8 {
+		if count >= 12 {
 			http.Error(w, "demo bill limit reached", http.StatusForbidden)
 			return
 		}

@@ -69,7 +69,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
-		if count >= 6 {
+		if count >= 10 {
 			http.Error(w, "demo account limit reached", http.StatusForbidden)
 			return
 		}

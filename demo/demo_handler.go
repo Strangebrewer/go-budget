@@ -112,6 +112,13 @@ func (h *Handler) HandleDemoRegistered(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.seedIncome(ctx, userID, accountIDs, payload.ExpiresAt); err != nil {
+		slog.Error("demo-registered: seed income", "userId", userID, "error", err)
+		h.sendErrorSpan(payload.TraceID, err, start)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if h.tracer != nil && payload.TraceID != "" {
 		h.tracer.SendSpan(payload.TraceID, "demo seed", start, time.Now())
 	}
@@ -133,24 +140,29 @@ func (h *Handler) seedCategories(ctx context.Context, userID uuid.UUID, expiresA
 	return ids, nil
 }
 
-// accountIDs index: 0=Checking, 1=Savings, 2=Visa
-func (h *Handler) seedAccounts(ctx context.Context, userID uuid.UUID, expiresAt time.Time) ([3]string, error) {
+// accountIDs index: 0=My Checking, 1=My Savings, 2=My Visa, 3=Her Checking, 4=Her Savings, 5=Her Visa
+func (h *Handler) seedAccounts(ctx context.Context, userID uuid.UUID, expiresAt time.Time) ([6]string, error) {
 	type seed struct {
 		name    string
 		balance int32
 		accType account.AccountType
+		owner   string
 	}
-	seeds := [3]seed{
-		{"Checking", 235400, account.AccountTypeAsset},
-		{"Savings", 1250000, account.AccountTypeAsset},
-		{"Visa", 142300, account.AccountTypeDebt},
+	seeds := [6]seed{
+		{"My Checking", 324100, account.AccountTypeAsset, "mine"},
+		{"My Savings", 1875000, account.AccountTypeAsset, "mine"},
+		{"My Visa", 182300, account.AccountTypeDebt, "mine"},
+		{"Her Checking", 215600, account.AccountTypeAsset, "hers"},
+		{"Her Savings", 2430000, account.AccountTypeAsset, "hers"},
+		{"Her Visa", 89200, account.AccountTypeDebt, "hers"},
 	}
-	var ids [3]string
+	var ids [6]string
 	for i, s := range seeds {
 		a, err := h.accountStore.Create(ctx, userID, account.CreateAccountRequest{
 			Name:    s.name,
 			Balance: s.balance,
 			Type:    s.accType,
+			Owner:   s.owner,
 		}, &expiresAt)
 		if err != nil {
 			return ids, fmt.Errorf("create account %q: %w", s.name, err)
@@ -165,22 +177,26 @@ type seededBill struct {
 	sourceID   string
 	categoryID string
 	amount     int32
+	owner      string
 }
 
-// seedBills creates 4 bills. accountIDs: 0=Checking, 1=Savings, 2=Visa. categoryIDs: 0=Food, 1=Gas, 2=Other.
-func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [3]string, categoryIDs [3]string, expiresAt time.Time) ([]seededBill, error) {
+// seedBills creates 8 bills — 4 mine (My Checking), 4 hers (Her Checking). categoryIDs: 2=Other.
+func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [6]string, categoryIDs [3]string, expiresAt time.Time) ([]seededBill, error) {
 	type seed struct {
-		name       string
-		sourceIdx  int
-		categoryID string
-		dueDay     int32
-		amount     int32
+		name      string
+		sourceIdx int
+		amount    int32
+		owner     string
 	}
 	seeds := []seed{
-		{"Netflix", 2, categoryIDs[2], 15, 1999},
-		{"Spotify", 2, categoryIDs[2], 1, 1099},
-		{"Electric", 0, categoryIDs[2], 10, 8500},
-		{"Car Insurance", 0, categoryIDs[2], 20, 14200},
+		{"Mortgage", 0, 155000, "mine"},
+		{"Electric", 0, 11800, "mine"},
+		{"Natural Gas", 0, 7400, "mine"},
+		{"Internet", 0, 8900, "mine"},
+		{"Car Insurance", 3, 14200, "hers"},
+		{"Cell Phone", 3, 15500, "hers"},
+		{"Student Loan", 3, 43000, "hers"},
+		{"Water", 3, 6500, "hers"},
 	}
 
 	result := make([]seededBill, 0, len(seeds))
@@ -188,8 +204,8 @@ func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [3
 		b, err := h.billStore.Create(ctx, userID, bill.CreateBillRequest{
 			Name:       s.name,
 			SourceID:   accountIDs[s.sourceIdx],
-			CategoryID: s.categoryID,
-			DueDay:     s.dueDay,
+			CategoryID: categoryIDs[2],
+			Owner:      s.owner,
 		}, &expiresAt)
 		if err != nil {
 			return nil, fmt.Errorf("create bill %q: %w", s.name, err)
@@ -197,8 +213,9 @@ func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [3
 		result = append(result, seededBill{
 			id:         b.ID,
 			sourceID:   accountIDs[s.sourceIdx],
-			categoryID: s.categoryID,
+			categoryID: categoryIDs[2],
 			amount:     s.amount,
+			owner:      s.owner,
 		})
 	}
 	return result, nil
@@ -216,6 +233,8 @@ func (h *Handler) seedBillPayments(ctx context.Context, userID uuid.UUID, bills 
 				Month:       month,
 				Description: "",
 				Type:        transaction.TransactionTypeDebit,
+				Owner:       b.owner,
+				Shared:      true,
 			}, &expiresAt)
 			if err != nil {
 				return fmt.Errorf("create bill payment (bill=%s month=%s): %w", b.id, month, err)
@@ -225,8 +244,8 @@ func (h *Handler) seedBillPayments(ctx context.Context, userID uuid.UUID, bills 
 	return nil
 }
 
-func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accountIDs [3]string, categoryIDs [3]string, expiresAt time.Time) error {
-	// 0=Checking, 1=Savings, 2=Visa  |  categoryIDs: 0=Food, 1=Gas, 2=Other
+func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accountIDs [6]string, categoryIDs [3]string, expiresAt time.Time) error {
+	// accountIDs: 0=My Checking, 2=My Visa  |  categoryIDs: 0=Food, 1=Gas, 2=Other
 	checking := accountIDs[0]
 	visa := accountIDs[2]
 	food := categoryIDs[0]
@@ -237,11 +256,11 @@ func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accoun
 	m0, m1, m2 := months[0], months[1], months[2]
 
 	type seed struct {
-		desc       string
-		category   string
-		amount     int32
-		source     string
-		month      string
+		desc     string
+		category string
+		amount   int32
+		source   string
+		month    string
 	}
 	seeds := []seed{
 		{"Whole Foods", food, 8432, checking, m0},
@@ -274,11 +293,81 @@ func (h *Handler) seedTransactions(ctx context.Context, userID uuid.UUID, accoun
 			Month:       s.month,
 			Description: s.desc,
 			Type:        transaction.TransactionTypeDebit,
+			Shared:      true,
 		}, &expiresAt)
 		if err != nil {
 			return fmt.Errorf("create transaction %q: %w", s.desc, err)
 		}
 	}
+	return nil
+}
+
+func (h *Handler) seedIncome(ctx context.Context, userID uuid.UUID, accountIDs [6]string, expiresAt time.Time) error {
+	months := recentMonths(6)
+	myChecking := accountIDs[0]
+	herChecking := accountIDs[3]
+
+	type incomeSeed struct {
+		amounts []int32
+		month   string
+	}
+
+	// Base ~$2,875/paycheck; current month gets 1, prior months get 2 each.
+	mySeeds := []incomeSeed{
+		{[]int32{288000}, months[0]},
+		{[]int32{290200, 285600}, months[1]},
+		{[]int32{286800, 289400}, months[2]},
+		{[]int32{291000, 287300}, months[3]},
+		{[]int32{288500, 285900}, months[4]},
+		{[]int32{286200, 290100}, months[5]},
+	}
+
+	// Base ~$2,310/paycheck.
+	herSeeds := []incomeSeed{
+		{[]int32{232000}, months[0]},
+		{[]int32{231700, 230500}, months[1]},
+		{[]int32{229400, 233000}, months[2]},
+		{[]int32{232800, 230100}, months[3]},
+		{[]int32{231200, 228900}, months[4]},
+		{[]int32{229800, 232500}, months[5]},
+	}
+
+	for _, s := range mySeeds {
+		for _, amount := range s.amounts {
+			_, err := h.transactionStore.Create(ctx, userID, transaction.CreateTransactionRequest{
+				SourceID:    myChecking,
+				Amount:      amount,
+				Month:       s.month,
+				Description: "Direct Deposit",
+				Income:      true,
+				Owner:       "mine",
+				Shared:      true,
+				Type:        transaction.TransactionTypeCredit,
+			}, &expiresAt)
+			if err != nil {
+				return fmt.Errorf("create income (mine month=%s): %w", s.month, err)
+			}
+		}
+	}
+
+	for _, s := range herSeeds {
+		for _, amount := range s.amounts {
+			_, err := h.transactionStore.Create(ctx, userID, transaction.CreateTransactionRequest{
+				SourceID:    herChecking,
+				Amount:      amount,
+				Month:       s.month,
+				Description: "Direct Deposit",
+				Income:      true,
+				Owner:       "hers",
+				Shared:      true,
+				Type:        transaction.TransactionTypeCredit,
+			}, &expiresAt)
+			if err != nil {
+				return fmt.Errorf("create income (hers month=%s): %w", s.month, err)
+			}
+		}
+	}
+
 	return nil
 }
 
