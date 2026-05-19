@@ -90,7 +90,7 @@ func (h *Handler) HandleDemoRegistered(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bills, err := h.seedBills(ctx, userID, accountIDs, categoryIDs, payload.ExpiresAt)
+	bills, err := h.seedBills(ctx, userID, accountIDs, payload.ExpiresAt)
 	if err != nil {
 		slog.Error("demo-registered: seed bills", "userId", userID, "error", err)
 		h.sendErrorSpan(payload.TraceID, err, start)
@@ -173,15 +173,14 @@ func (h *Handler) seedAccounts(ctx context.Context, userID uuid.UUID, expiresAt 
 }
 
 type seededBill struct {
-	id         string
-	sourceID   string
-	categoryID string
-	amount     int32
-	owner      string
+	id       string
+	sourceID string
+	amount   int32
+	owner    string
 }
 
-// seedBills creates 8 bills — 4 mine (My Checking), 4 hers (Her Checking). categoryIDs: 2=Other.
-func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [6]string, categoryIDs [3]string, expiresAt time.Time) ([]seededBill, error) {
+// seedBills creates 8 bills — 4 mine (My Checking), 4 hers (Her Checking).
+func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [6]string, expiresAt time.Time) ([]seededBill, error) {
 	type seed struct {
 		name      string
 		sourceIdx int
@@ -202,20 +201,18 @@ func (h *Handler) seedBills(ctx context.Context, userID uuid.UUID, accountIDs [6
 	result := make([]seededBill, 0, len(seeds))
 	for _, s := range seeds {
 		b, err := h.billStore.Create(ctx, userID, bill.CreateBillRequest{
-			Name:       s.name,
-			SourceID:   accountIDs[s.sourceIdx],
-			CategoryID: categoryIDs[2],
-			Owner:      s.owner,
+			Name:     s.name,
+			SourceID: accountIDs[s.sourceIdx],
+			Owner:    s.owner,
 		}, &expiresAt)
 		if err != nil {
 			return nil, fmt.Errorf("create bill %q: %w", s.name, err)
 		}
 		result = append(result, seededBill{
-			id:         b.ID,
-			sourceID:   accountIDs[s.sourceIdx],
-			categoryID: categoryIDs[2],
-			amount:     s.amount,
-			owner:      s.owner,
+			id:       b.ID,
+			sourceID: accountIDs[s.sourceIdx],
+			amount:   s.amount,
+			owner:    s.owner,
 		})
 	}
 	return result, nil
@@ -226,10 +223,9 @@ func (h *Handler) seedBillPayments(ctx context.Context, userID uuid.UUID, bills 
 	for _, b := range bills {
 		for _, month := range months {
 			_, err := h.transactionStore.CreateFromBill(ctx, userID, transaction.CreateTransactionRequest{
-				SourceID:    b.sourceID,
-				BillID:      b.id,
-				CategoryID:  b.categoryID,
-				Amount:      b.amount,
+				SourceID: b.sourceID,
+				BillID:   b.id,
+				Amount:   b.amount,
 				Month:       month,
 				Description: "",
 				Type:        transaction.TransactionTypeDebit,
