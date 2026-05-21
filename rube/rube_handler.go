@@ -22,8 +22,9 @@ var words = []string{
 }
 
 type ChainRequest struct {
-	UserId string   `json:"userId"`
-	Words  []string `json:"words"`
+	UserId    string     `json:"userId"`
+	Words     []string   `json:"words"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
 type Handler struct {
