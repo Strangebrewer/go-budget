@@ -29,6 +29,7 @@ func New(addr string, allowedOrigins []string, application *app.Application, aut
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger(slog.Default()))
 	r.Use(chimiddleware.Recoverer)
+	r.Use(middleware.StripAPIPrefix("/api/budget"))
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Tracing(application.Tracer))
 		registerRoutes(r, application, authMiddleware)
