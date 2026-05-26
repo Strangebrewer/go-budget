@@ -8,10 +8,15 @@ import (
 )
 
 type Config struct {
-	Port           string
-	DatabaseURL    string
-	JWTPublicKey   string
-	AllowedOrigins []string
+	Port             string
+	DatabaseURL      string
+	DBName           string
+	JWTPublicKey     string
+	AllowedOrigins   []string
+	TracerURL        string
+	TracerServiceKey string
+	RubeOwidNextURL  string
+	PubSubAudience   string
 }
 
 func parseOrigins(s string) []string {
@@ -26,10 +31,20 @@ func Load() *Config {
 		_ = godotenv.Load(".env.local")
 	}
 
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "budget"
+	}
+
 	return &Config{
-		Port:           os.Getenv("PORT"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		JWTPublicKey:   os.Getenv("JWT_PUBLIC_KEY"),
-		AllowedOrigins: parseOrigins(os.Getenv("ALLOWED_ORIGINS")),
+		Port:             os.Getenv("PORT"),
+		DatabaseURL:      os.Getenv("DATABASE_URL"),
+		DBName:           dbName,
+		JWTPublicKey:     os.Getenv("JWT_PUBLIC_KEY"),
+		AllowedOrigins:   parseOrigins(os.Getenv("ALLOWED_ORIGINS")),
+		TracerURL:        os.Getenv("TRACER_SERVICE_URL"),
+		TracerServiceKey: os.Getenv("TRACER_SERVICE_KEY"),
+		RubeOwidNextURL:  os.Getenv("RUBE_OWID_NEXT_URL"),
+		PubSubAudience:   os.Getenv("PUBSUB_AUDIENCE"),
 	}
 }

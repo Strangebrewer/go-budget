@@ -1,7 +1,19 @@
 package app
 
-import "github.com/Strangebrewer/go-budget/example"
+import (
+	"github.com/Strangebrewer/go-budget/account"
+	"github.com/Strangebrewer/go-budget/bill"
+	"github.com/Strangebrewer/go-budget/category"
+	"github.com/Strangebrewer/go-budget/tracer"
+	"github.com/Strangebrewer/go-budget/transaction"
+)
 
 type Application struct {
-	ExampleStore *example.Store
+	AccountStore     *account.Store
+	BillStore        *bill.Store
+	CategoryStore    *category.Store
+	TransactionStore *transaction.Store
+	Tracer           *tracer.Client
+	RubeOwidNextURL  string
+	PubSubAudience   string
 }

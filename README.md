@@ -1,6 +1,6 @@
 # go-budget
 
-Budgeting service for the personal-enterprise project. Manages accounts, bills, and transactions. All monetary values are stored as integers (cents) — formatting is handled on the frontend.
+Budgeting service for the personal-enterprise project, nomsayn? Manages accounts, bills, and transactions. All monetary values are stored as integers (cents) — formatting is handled on the frontend.
 
 > Active development — endpoints and schema documented once stable.
 
