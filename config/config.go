@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Port             string
 	DatabaseURL      string
+	DBName           string
 	JWTPublicKey     string
 	AllowedOrigins   []string
 	TracerURL        string
@@ -30,9 +31,15 @@ func Load() *Config {
 		_ = godotenv.Load(".env.local")
 	}
 
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "budget"
+	}
+
 	return &Config{
 		Port:             os.Getenv("PORT"),
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
+		DBName:           dbName,
 		JWTPublicKey:     os.Getenv("JWT_PUBLIC_KEY"),
 		AllowedOrigins:   parseOrigins(os.Getenv("ALLOWED_ORIGINS")),
 		TracerURL:        os.Getenv("TRACER_SERVICE_URL"),
